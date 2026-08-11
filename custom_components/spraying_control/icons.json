@@ -1,0 +1,20 @@
+{
+  "entity": {
+    "sensor": {
+      "area_sprayed": { "default": "mdi:texture-box" },
+      "volume_used": { "default": "mdi:cup-water" },
+      "application_rate": { "default": "mdi:speedometer" },
+      "refills": { "default": "mdi:reload" },
+      "tank_loads": { "default": "mdi:propane-tank" },
+      "coverage": { "default": "mdi:check-decagram" },
+      "missed_area": { "default": "mdi:alert-circle-outline" },
+      "overlap": { "default": "mdi:layers-triple" },
+      "distance": { "default": "mdi:map-marker-path" },
+      "working_time": { "default": "mdi:clock-outline" },
+      "last_run": { "default": "mdi:sprinkler-variant" }
+    }
+  },
+  "services": {
+    "analyze": "mdi:map-search"
+  }
+}

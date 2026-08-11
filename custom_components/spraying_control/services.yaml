@@ -1,0 +1,12 @@
+analyze:
+  fields:
+    date:
+      required: false
+      example: "2026-08-11"
+      selector:
+        date:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spraying_control
