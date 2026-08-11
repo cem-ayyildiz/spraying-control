@@ -1,0 +1,86 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Spraying Control",
+        "description": "Pick the device tracker that rides on the sprayer, then describe the machine. Returns to the base location are counted as tank refills.",
+        "data": {
+          "tracker": "Device tracker",
+          "boom_width_m": "Boom width",
+          "tank_capacity_l": "Tank capacity",
+          "base": "Base / refill location",
+          "base_min_stop_s": "Minimum stop to count as a refill",
+          "min_speed_kmh": "Minimum working speed",
+          "max_speed_kmh": "Maximum working speed",
+          "max_gap_s": "Maximum gap between fixes",
+          "max_accuracy_m": "Worst GPS accuracy to accept",
+          "daily_time": "Analyse automatically at (optional)"
+        },
+        "data_description": {
+          "base": "Drag the marker to where the tank is filled, and size the circle to cover the yard.",
+          "max_speed_kmh": "Anything faster is treated as road transport and is not sprayed.",
+          "max_gap_s": "No swath is drawn across a longer silence, because the route is unknown.",
+          "daily_time": "Leave empty to only analyse on demand via the spraying_control.analyze action."
+        }
+      }
+    },
+    "error": {
+      "speed_window": "The minimum working speed must be below the maximum."
+    },
+    "abort": {
+      "already_configured": "That device tracker is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Spraying Control",
+        "data": {
+          "boom_width_m": "Boom width",
+          "tank_capacity_l": "Tank capacity",
+          "base": "Base / refill location",
+          "base_min_stop_s": "Minimum stop to count as a refill",
+          "min_speed_kmh": "Minimum working speed",
+          "max_speed_kmh": "Maximum working speed",
+          "max_gap_s": "Maximum gap between fixes",
+          "max_accuracy_m": "Worst GPS accuracy to accept",
+          "daily_time": "Analyse automatically at (optional)"
+        }
+      }
+    },
+    "error": {
+      "speed_window": "The minimum working speed must be below the maximum."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "area_sprayed": { "name": "Area sprayed" },
+      "volume_used": { "name": "Volume used" },
+      "application_rate": { "name": "Application rate" },
+      "refills": { "name": "Refills" },
+      "tank_loads": { "name": "Tank loads" },
+      "coverage": { "name": "Coverage" },
+      "missed_area": { "name": "Missed area" },
+      "overlap": { "name": "Overlap" },
+      "distance": { "name": "Distance" },
+      "working_time": { "name": "Working time" },
+      "last_run": { "name": "Last run" }
+    }
+  },
+  "services": {
+    "analyze": {
+      "name": "Analyse a run",
+      "description": "Reads the tracker's recorded positions for a day and works out coverage, misses, overlap and product used.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Local day to analyse. Defaults to today."
+        },
+        "config_entry_id": {
+          "name": "Sprayer",
+          "description": "Which configured sprayer to analyse. Defaults to all of them."
+        }
+      }
+    }
+  }
+}

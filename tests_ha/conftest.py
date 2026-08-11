@@ -1,0 +1,22 @@
+"""Fixtures for the Home Assistant integration tests.
+
+Run these with the dedicated environment, which pins the Home Assistant test
+harness:
+
+    .venv-ha/bin/python -m pytest tests_ha
+"""
+
+import pytest
+
+pytest_plugins = "pytest_homeassistant_custom_component"
+
+
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(recorder_mock, enable_custom_integrations):
+    """Let Home Assistant load custom_components/spraying_control.
+
+    ``recorder_mock`` is listed first on purpose: the integration declares
+    recorder as a dependency, and the recorder fixture has to claim its
+    database before anything instantiates ``hass``.
+    """
+    yield
