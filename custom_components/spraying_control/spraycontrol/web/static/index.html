@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>Spraying Control</title>
+<link rel="stylesheet" href="leaflet.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="layout">
+  <aside id="panel">
+    <header>
+      <h1>Spraying Control</h1>
+      <p class="sub">Coverage, misses, overlap and product use from a GPS track.</p>
+    </header>
+
+    <section>
+      <h2>1 &middot; Track</h2>
+      <div class="tabs" id="source-tabs">
+        <button type="button" class="tab active" data-source="file">File</button>
+        <button type="button" class="tab" data-source="ha">Home Assistant</button>
+        <button type="button" class="tab" data-source="demo">Demo</button>
+      </div>
+
+      <div class="pane active" data-pane="file">
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".gpx,.csv,.tsv,.txt,.json,.geojson,.kml">
+          <span id="file-label">Drop a GPX, CSV, KML or GeoJSON track here, or click to choose</span>
+        </label>
+      </div>
+
+      <div class="pane" data-pane="ha">
+        <div id="ha-status" class="note">Checking Home Assistant&hellip;</div>
+        <label>Device tracker
+          <select id="entity"></select>
+        </label>
+        <div class="row">
+          <label>Day <input type="date" id="day"></label>
+          <label>UTC offset <input type="number" id="tz-offset" step="0.5" value="0"></label>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="demo">
+        <p class="note">A synthetic run with one skipped pass and one overlapping
+        pass built in, so you can see what each looks like on the map.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>2 &middot; Machine</h2>
+      <div class="row">
+        <label>Boom width <span class="unit">m</span><input type="number" id="boom" value="12" step="0.1" min="0.1"></label>
+        <label>Tank <span class="unit">L</span><input type="number" id="tank" value="1000" step="10" min="1"></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>3 &middot; Base &amp; field</h2>
+      <p class="note">Returns to base are counted as refills. Total product = tank &times; loads.</p>
+      <div class="row">
+        <label>Base lat <input type="number" id="base-lat" step="0.000001" placeholder="unset"></label>
+        <label>Base lon <input type="number" id="base-lon" step="0.000001" placeholder="unset"></label>
+      </div>
+      <div class="row">
+        <label>Radius <span class="unit">m</span><input type="number" id="base-radius" value="30" min="5"></label>
+        <label>Min stop <span class="unit">s</span><input type="number" id="base-dwell" value="120" min="10"></label>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="pick-base" class="ghost">Pick base on map</button>
+        <button type="button" id="clear-base" class="ghost">Clear</button>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="draw-field" class="ghost">Draw field boundary</button>
+        <button type="button" id="clear-field" class="ghost">Clear field</button>
+      </div>
+      <div id="field-note" class="note"></div>
+    </section>
+
+    <details id="advanced">
+      <summary>Advanced</summary>
+      <div class="row">
+        <label>Min speed <span class="unit">km/h</span><input type="number" id="min-speed" value="1.5" step="0.1"></label>
+        <label>Max speed <span class="unit">km/h</span><input type="number" id="max-speed" value="18" step="0.5"></label>
+      </div>
+      <div class="row">
+        <label>Max fix gap <span class="unit">s</span><input type="number" id="max-gap" value="60" step="5"></label>
+        <label>Max accuracy <span class="unit">m</span><input type="number" id="max-accuracy" value="30" step="5"></label>
+      </div>
+      <div class="row">
+        <label>Cell size <span class="unit">m</span><input type="number" id="cell" value="1" step="0.5" min="0.25"></label>
+        <label>Ignore gaps &lt; <span class="unit">m&sup2;</span><input type="number" id="min-gap-area" value="25" step="5"></label>
+      </div>
+    </details>
+
+    <button type="button" id="run" class="primary">Analyse</button>
+    <div id="error" class="error" hidden></div>
+
+    <section id="results" hidden>
+      <h2>Results</h2>
+      <div id="stats" class="stats"></div>
+      <div id="warnings"></div>
+
+      <h3>Tank loads</h3>
+      <table id="loads"><tbody></tbody></table>
+
+      <h3>Largest misses</h3>
+      <table id="gaps"><tbody></tbody></table>
+
+      <h3>Legend</h3>
+      <div id="legend" class="legend"></div>
+
+      <div class="btn-row">
+        <a id="dl-geojson" class="ghost btn" download>Download GeoJSON</a>
+        <a id="dl-json" class="ghost btn" download>Download JSON</a>
+      </div>
+      <div class="btn-row">
+        <label class="grow">Sensor prefix <input type="text" id="prefix" value="spray"></label>
+        <button type="button" id="push" class="primary">Push to Home Assistant</button>
+      </div>
+      <div id="push-result" class="note"></div>
+    </section>
+  </aside>
+
+  <main id="map"></main>
+</div>
+
+<div id="hint" hidden></div>
+
+<script src="leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
