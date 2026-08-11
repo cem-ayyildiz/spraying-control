@@ -13,6 +13,21 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-11
+
+See the coverage pattern in the dashboard.
+
+### Added
+- **Coverage map** image entity — the pass-count overlay (green once, yellow
+  twice, orange three times, purple four+, red missed) rendered as an image, for
+  a picture card. Home Assistant's map card can only plot points, so this is how
+  the overlaps and misses show up on the dashboard. The shipped dashboard now
+  includes it with a legend.
+
+### Changed
+- The integration now renders the coverage overlay on every analysis (it was
+  computed but discarded before).
+
 ## [0.4.0] - 2026-08-11
 
 Upload a track file straight into Home Assistant.

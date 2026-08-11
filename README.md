@@ -138,7 +138,14 @@ without touching a keyboard:
   track instead.
 
 There's also a **Start point** sensor exposing the point's coordinates, so it
-shows on a map card next to your phone.
+shows on a map card next to your phone, and a **Coverage map** image entity —
+the pass-count picture (green once, yellow twice, orange three times, purple
+four or more, red missed) for a picture card on the dashboard.
+
+> Home Assistant's map card only plots points, so it can't draw the coverage
+> overlay on a real satellite map. The **Coverage map** image shows the pattern;
+> for the full interactive map (overlay on satellite tiles, gap outlines, the
+> walked path) use the **add-on**.
 
 #### Analyse a saved track file
 

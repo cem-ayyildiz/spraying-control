@@ -7,6 +7,9 @@
       "set_start_point": { "default": "mdi:map-marker-plus" },
       "analyze_today": { "default": "mdi:map-search" }
     },
+    "image": {
+      "coverage_map": { "default": "mdi:map-check" }
+    },
     "sensor": {
       "start_point": { "default": "mdi:map-marker-radius" },
       "area_sprayed": { "default": "mdi:texture-box" },

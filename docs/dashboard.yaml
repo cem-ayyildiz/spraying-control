@@ -79,6 +79,13 @@ cards:
       - device_tracker.sm_a356e
       - sensor.spraying_sm_a356e_start_point
 
+  - type: image
+    image_entity: image.spraying_sm_a356e_coverage_map
+  - type: markdown
+    content: >
+      **Coverage map** — 🟩 sprayed once · 🟨 twice · 🟧 three times · 🟪 four+
+      · 🟥 missed. (The pattern of your walk; not a satellite map.)
+
   - type: grid
     columns: 2
     square: false
