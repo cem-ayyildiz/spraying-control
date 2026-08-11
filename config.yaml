@@ -1,9 +1,9 @@
 name: Spraying Control
-version: "0.1.0"
+version: "0.2.0"
 slug: spraying_control
 description: >-
-  Analyse sprayer GPS tracks for coverage, missed strips, overlap, tank refills
-  and product use, then publish the results as sensors.
+  Analyse your knapsack-sprayer walk for coverage, missed strips, overlap, tank
+  refills and product use, then publish the results as sensors.
 url: https://github.com/cem-ayyildiz/spraying-control
 # armv7 is deliberately absent: numpy, scipy and shapely publish no armv7
 # wheels, so the image would have to compile them from source on the device.
@@ -27,20 +27,20 @@ map:
     read_only: false
 
 options:
-  boom_width_m: 12
-  tank_capacity_l: 1000
+  swath_width_m: 1.0
+  tank_capacity_l: 18
   base_latitude: 0
   base_longitude: 0
-  base_radius_m: 30
-  base_min_stop_s: 120
-  min_speed_kmh: 1.5
-  max_speed_kmh: 18
+  base_radius_m: 8
+  base_min_stop_s: 60
+  min_speed_kmh: 0.4
+  max_speed_kmh: 4.5
   sensor_prefix: spray
   log_level: info
 
 schema:
-  boom_width_m: float(0.1,)
-  tank_capacity_l: float(1,)
+  swath_width_m: float(0.1,5)
+  tank_capacity_l: float(1,50)
   base_latitude: float(-90,90)
   base_longitude: float(-180,180)
   base_radius_m: float(1,)

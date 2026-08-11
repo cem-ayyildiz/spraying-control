@@ -6,9 +6,15 @@ harness:
     .venv-ha/bin/python -m pytest tests_ha
 """
 
+import logging
+
 import pytest
 
 pytest_plugins = "pytest_homeassistant_custom_component"
+
+# The in-memory recorder echoes every statement at INFO; quiet it so test
+# output stays readable.
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 
 @pytest.fixture(autouse=True)

@@ -71,8 +71,9 @@ def analyze(
 
     if not user_bounded:
         warnings.append(
-            "Field boundary was inferred from the sprayed area. Misses along the "
-            "outer edge cannot be detected until a field boundary is supplied."
+            "The plot was worked out from where you walked. A strip along the "
+            "outer edge that you never walked to cannot be spotted until you draw "
+            "the plot boundary."
         )
 
     overlay = render_overlay(grid.counts, field_mask, gap_mask) if render else None
@@ -134,7 +135,7 @@ def reentry_gap(seg: SegmentedTrack, cfg: SprayerConfig) -> float:
     """How long a cell must go untouched before returning to it counts as a
     second pass.
 
-    Without a boom on/off signal there are no discrete passes to count: a
+    Without a lance on/off signal there are no discrete passes to count: a
     headland turn keeps one spraying run going for the whole tank. Time is the
     discriminator instead. Consecutive fixes re-touch a cell seconds apart,
     whereas the neighbouring swath only comes back minutes later, after the turn.
@@ -150,7 +151,7 @@ def reentry_gap(seg: SegmentedTrack, cfg: SprayerConfig) -> float:
 
 def _accumulate(seg: SegmentedTrack, grid: CoverageGrid, cfg: SprayerConfig) -> list[TankLoad]:
     """Stamp every swath into the grid and measure each tank load's footprint."""
-    half_width = cfg.boom_width_m / 2.0
+    half_width = cfg.swath_width_m / 2.0
     intervals = assign_loads(seg.passes, seg.visits, float(seg.track.t[0]), float(seg.track.t[-1]))
     threshold = reentry_gap(seg, cfg)
 

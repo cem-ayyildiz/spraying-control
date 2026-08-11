@@ -91,6 +91,13 @@ button:disabled { opacity: 0.5; cursor: default; }
 .primary:hover { filter: brightness(1.08); }
 .ghost { background: transparent; }
 .ghost.active { border-color: var(--accent); color: var(--accent); }
+.presets { display: flex; gap: 4px; margin: 4px 0; }
+.presets button {
+  flex: 1; padding: 6px 2px; font-size: 12.5px;
+  background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
+}
+.presets button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
 .btn-row { display: flex; gap: 8px; margin-top: 8px; align-items: flex-end; }
 .btn-row > button, .btn-row > a { flex: 1; }
 .btn-row .primary { margin-top: 0; width: auto; flex: 1; }

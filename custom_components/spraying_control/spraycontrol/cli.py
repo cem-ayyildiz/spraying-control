@@ -16,21 +16,22 @@ from .report import format_text_report, to_geojson
 
 
 def _add_machine_args(p: argparse.ArgumentParser) -> None:
-    g = p.add_argument_group("machine")
-    g.add_argument("--boom", type=float, default=12.0, metavar="M", help="boom width in metres (default: 12)")
-    g.add_argument("--tank", type=float, default=1000.0, metavar="L", help="tank capacity in litres (default: 1000)")
+    g = p.add_argument_group("sprayer")
+    g.add_argument("--swath", "--boom", dest="swath", type=float, default=1.0, metavar="M",
+                   help="spray band width in metres (default: 1.0)")
+    g.add_argument("--tank", type=float, default=18.0, metavar="L", help="tank capacity in litres (default: 18)")
     g.add_argument("--base", metavar="LAT,LON", help="refill location; returns here are counted as refills")
-    g.add_argument("--base-radius", type=float, default=30.0, metavar="M", help="base radius in metres (default: 30)")
-    g.add_argument("--base-dwell", type=float, default=120.0, metavar="S", help="seconds parked to count as a refill (default: 120)")
+    g.add_argument("--base-radius", type=float, default=8.0, metavar="M", help="base radius in metres (default: 8)")
+    g.add_argument("--base-dwell", type=float, default=60.0, metavar="S", help="seconds stopped to count as a refill (default: 60)")
 
     a = p.add_argument_group("analysis")
-    a.add_argument("--min-speed", type=float, default=1.5, metavar="KMH", help="below this the machine is stopped (default: 1.5)")
-    a.add_argument("--max-speed", type=float, default=18.0, metavar="KMH", help="above this it is road transport (default: 18)")
-    a.add_argument("--max-gap", type=float, default=60.0, metavar="S", help="fix gap beyond which no swath is drawn (default: 60)")
-    a.add_argument("--max-accuracy", type=float, default=30.0, metavar="M", help="discard fixes worse than this (default: 30)")
-    a.add_argument("--cell", type=float, default=1.0, metavar="M", help="grid cell size in metres (default: 1)")
-    a.add_argument("--min-gap-area", type=float, default=25.0, metavar="M2", help="ignore misses smaller than this (default: 25)")
-    a.add_argument("--field", metavar="FILE", help="GeoJSON field boundary; without it the field is inferred")
+    a.add_argument("--min-speed", type=float, default=0.4, metavar="KMH", help="below this the walker is paused (default: 0.4)")
+    a.add_argument("--max-speed", type=float, default=4.5, metavar="KMH", help="above this they are walking, not spraying (default: 6.5)")
+    a.add_argument("--max-gap", type=float, default=45.0, metavar="S", help="fix gap beyond which no band is drawn (default: 45)")
+    a.add_argument("--max-accuracy", type=float, default=25.0, metavar="M", help="discard fixes worse than this (default: 25)")
+    a.add_argument("--cell", type=float, default=0.25, metavar="M", help="grid cell size in metres (default: 0.25)")
+    a.add_argument("--min-gap-area", type=float, default=2.0, metavar="M2", help="ignore misses smaller than this (default: 2)")
+    a.add_argument("--field", metavar="FILE", help="GeoJSON plot boundary; without it the plot is inferred")
 
     o = p.add_argument_group("output")
     o.add_argument("--json", metavar="FILE", help="write the summary as JSON")
@@ -45,7 +46,7 @@ def _add_machine_args(p: argparse.ArgumentParser) -> None:
 
 def _config_from(args) -> SprayerConfig:
     return SprayerConfig(
-        boom_width_m=args.boom,
+        swath_width_m=args.swath,
         tank_capacity_l=args.tank,
         min_speed_kmh=args.min_speed,
         max_speed_kmh=args.max_speed,
@@ -133,9 +134,9 @@ def cmd_analyze(args) -> int:
 
 
 def cmd_demo(args) -> int:
-    track, base, cfg = synthetic_run(boom_width_m=args.boom)
+    track, base, cfg = synthetic_run(swath_width_m=args.swath)
     cfg = _config_from(args)
-    cfg.boom_width_m = args.boom
+    cfg.swath_width_m = args.swath
     result = analyze(track, cfg, _base_from(args) or base, render=bool(args.png))
     _emit(result, args)
     return 0

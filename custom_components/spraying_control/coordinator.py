@@ -14,7 +14,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_BASE,
     CONF_BASE_DWELL,
-    CONF_BOOM_WIDTH,
+    CONF_SWATH_WIDTH,
     CONF_MAX_ACCURACY,
     CONF_MAX_GAP,
     CONF_MAX_SPEED,
@@ -23,7 +23,7 @@ from .const import (
     CONF_TRACKER,
     DEFAULT_BASE_DWELL,
     DEFAULT_BASE_RADIUS,
-    DEFAULT_BOOM_WIDTH,
+    DEFAULT_SWATH_WIDTH,
     DEFAULT_MAX_ACCURACY,
     DEFAULT_MAX_GAP,
     DEFAULT_MAX_SPEED,
@@ -60,7 +60,7 @@ class SprayingCoordinator(DataUpdateCoordinator):
 
         opts = self.options
         cfg = SprayerConfig(
-            boom_width_m=float(opts.get(CONF_BOOM_WIDTH, DEFAULT_BOOM_WIDTH)),
+            swath_width_m=float(opts.get(CONF_SWATH_WIDTH, DEFAULT_SWATH_WIDTH)),
             tank_capacity_l=float(opts.get(CONF_TANK_CAPACITY, DEFAULT_TANK_CAPACITY)),
             min_speed_kmh=float(opts.get(CONF_MIN_SPEED, DEFAULT_MIN_SPEED)),
             max_speed_kmh=float(opts.get(CONF_MAX_SPEED, DEFAULT_MAX_SPEED)),

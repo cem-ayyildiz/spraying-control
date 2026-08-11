@@ -54,44 +54,52 @@ class BaseLocation:
 
     lat: float
     lon: float
-    radius_m: float = 30.0
-    min_dwell_s: float = 120.0
+    radius_m: float = 8.0
+    min_dwell_s: float = 60.0
     name: str = "Base"
 
 
 @dataclass
 class SprayerConfig:
-    """Machine and analysis parameters."""
+    """Knapsack sprayer and analysis parameters.
 
-    boom_width_m: float = 12.0
-    tank_capacity_l: float = 1000.0
+    Defaults are for a garden owner walking a plot with a 16-20 L backpack
+    sprayer, treating a metre-wide band with a hand lance.
+    """
 
-    # Speed window that counts as active spraying. Below the minimum the machine
-    # is treated as stopped; above the maximum as road transport.
-    min_speed_kmh: float = 1.5
-    max_speed_kmh: float = 18.0
+    # Effective width of the band treated on one pass. Set it to match your
+    # nozzle and technique - a single wide-angle nozzle covers roughly a metre.
+    swath_width_m: float = 1.0
+    tank_capacity_l: float = 18.0
+
+    # Speed window that counts as active spraying, in km/h. Below the minimum the
+    # walker is treated as paused; above the maximum they are just walking, not
+    # spraying (a stroll to the next bed, or back to refill).
+    min_speed_kmh: float = 0.4
+    max_speed_kmh: float = 4.5
 
     # Two fixes further apart in time than this are not joined into a swath;
     # we cannot know what happened in between.
-    max_gap_s: float = 60.0
+    max_gap_s: float = 45.0
 
     # Phone GPS reports an accuracy radius. Fixes worse than this are dropped.
-    max_accuracy_m: float = 30.0
+    max_accuracy_m: float = 25.0
 
     # A cell touched again within this many seconds is the same pass, not a
     # second one. Zero derives it from the fix interval; see analyze.reentry_gap.
     reentry_gap_s: float = 0.0
 
-    cell_size_m: float = 1.0
-    min_gap_area_m2: float = 25.0
+    # Fine enough to resolve a metre-wide band.
+    cell_size_m: float = 0.25
+    min_gap_area_m2: float = 2.0
 
-    # Structuring radius for inferring the field boundary from the sprayed area,
-    # as a multiple of the boom width. Row spacings up to this are closed over.
-    field_close_factor: float = 1.5
+    # Structuring radius for inferring the plot boundary from the sprayed area,
+    # as a multiple of the swath width. Lane spacings up to this are closed over.
+    field_close_factor: float = 2.0
 
     def __post_init__(self) -> None:
-        if self.boom_width_m <= 0:
-            raise ValueError("boom_width_m must be positive")
+        if self.swath_width_m <= 0:
+            raise ValueError("swath_width_m must be positive")
         if self.tank_capacity_l <= 0:
             raise ValueError("tank_capacity_l must be positive")
         if self.min_speed_kmh >= self.max_speed_kmh:
