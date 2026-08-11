@@ -79,8 +79,11 @@ cards:
       - device_tracker.sm_a356e
       - sensor.spraying_sm_a356e_start_point
 
-  - type: image
-    image_entity: image.spraying_sm_a356e_coverage_map
+  - type: picture-entity
+    entity: image.spraying_sm_a356e_coverage_map
+    name: Coverage map
+    show_state: false
+    show_name: false
   - type: markdown
     content: >
       **Coverage map** — 🟩 sprayed once · 🟨 twice · 🟧 three times · 🟪 four+
