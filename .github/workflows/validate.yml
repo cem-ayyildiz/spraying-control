@@ -1,0 +1,59 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # HACS and hassfest rules change under you; catch that on a schedule
+    # rather than on the day you want to publish a release.
+    - cron: "31 4 * * 1"
+  workflow_dispatch:
+
+jobs:
+  hassfest:
+    name: Home Assistant manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+
+  tests:
+    name: Library tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install the Home Assistant test harness
+        run: |
+          pip install --upgrade pip
+          pip install --pre pytest-homeassistant-custom-component numpy scipy shapely
+      - run: python -m pytest -c pytest-ha.ini -q
+
+  addon:
+    name: Add-on image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t spraying-control:ci .
