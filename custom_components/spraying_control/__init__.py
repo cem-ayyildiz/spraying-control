@@ -28,7 +28,12 @@ from .coordinator import SprayingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH, Platform.BUTTON]
+PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.SWITCH,
+    Platform.BUTTON,
+    Platform.IMAGE,
+]
 
 SprayingConfigEntry = ConfigEntry[SprayingCoordinator]
 

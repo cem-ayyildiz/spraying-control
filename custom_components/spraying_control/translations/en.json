@@ -80,6 +80,9 @@
       "set_start_point": { "name": "Set start point" },
       "analyze_today": { "name": "Analyse today" }
     },
+    "image": {
+      "coverage_map": { "name": "Coverage map" }
+    },
     "sensor": {
       "start_point": { "name": "Start point" },
       "area_sprayed": { "name": "Area sprayed" },

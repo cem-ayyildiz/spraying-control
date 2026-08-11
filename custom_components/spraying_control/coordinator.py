@@ -210,7 +210,7 @@ class SprayingCoordinator(DataUpdateCoordinator):
             track = await self.hass.async_add_executor_job(parse_ha_history, payload, self.tracker)
             track.name = f"{self.tracker} {start:%Y-%m-%d}"
             result = await self.hass.async_add_executor_job(
-                partial(analyze, track, cfg, base, None, False)
+                partial(analyze, track, cfg, base, None, True)
             )
         except (TrackParseError, ValueError) as err:
             raise UpdateFailed(str(err)) from err
@@ -234,7 +234,7 @@ class SprayingCoordinator(DataUpdateCoordinator):
         try:
             track = await self.hass.async_add_executor_job(parse_track, data, filename)
             result = await self.hass.async_add_executor_job(
-                partial(analyze, track, cfg, base, None, False)
+                partial(analyze, track, cfg, base, None, True)
             )
         except (TrackParseError, ValueError) as err:
             raise UpdateFailed(str(err)) from err

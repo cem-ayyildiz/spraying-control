@@ -278,6 +278,22 @@ async def test_analyze_file_rejects_disallowed_path(recorder_mock, hass: HomeAss
         )
 
 
+async def test_coverage_image(recorder_mock, hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    # Nothing analysed yet, so there is no picture.
+    assert hass.states.get("image.spraying_sprayer_coverage_map").state == STATE_UNAVAILABLE
+
+    track, _, _ = synthetic_run(interval_s=3.0)
+    await entry.runtime_data.async_analyze_bytes(to_gpx(track).encode(), "walk.gpx")
+    await hass.async_block_till_done()
+
+    # The overlay is rendered and is a real PNG.
+    png = entry.runtime_data.data.overlay_png
+    assert png is not None and png[:8] == b"\x89PNG\r\n\x1a\n"
+    # The image entity now serves it.
+    assert hass.states.get("image.spraying_sprayer_coverage_map").state != STATE_UNAVAILABLE
+
+
 async def test_unload_entry(recorder_mock, hass: HomeAssistant) -> None:
     entry = await _setup(hass)
     assert await hass.config_entries.async_unload(entry.entry_id)
