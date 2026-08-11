@@ -172,7 +172,36 @@ that expects a whole dashboard and would replace your other tabs.) It assumes
 the device is `Spraying · SM-A356E`; change `sm_a356e` throughout if your
 tracker differs.
 
-### The add-on, for the map
+### The real map: satellite imagery, the overlay, gap outlines
+
+The dashboard's **Coverage map** image (above) shows the sprayed pattern, but
+not on satellite imagery — Home Assistant has nothing built in that can. For
+the actual map — satellite tiles, the overlay geo-aligned on top, gap outlines,
+your walked path, all pannable and zoomable — run the **web interface**. It's
+the same thing this project's screenshot shows.
+
+**On Home Assistant OS or Supervised:** install it as the **add-on** below —
+it appears in your sidebar automatically.
+
+**On Home Assistant Container / Core** (no Supervisor, so no Add-ons menu):
+run it as its own container instead:
+
+```bash
+git clone https://github.com/cem-ayyildiz/spraying-control
+cd spraying-control
+cp .env.standalone.example .env
+# edit .env: HA_URL=https://your-home-assistant, and a long-lived access
+# token from your HA profile -> Security -> Long-Lived Access Tokens
+docker compose -f docker-compose.standalone.yml up -d --build
+```
+
+Open `http://<that-host>:8099`. It talks to Home Assistant over the same REST
+API the integration uses — reads tracker history, and its **Push to Home
+Assistant** button writes `sensor.spray_*` states — just over the network
+instead of through the Supervisor. There's no ingress, so put it behind your
+own reverse proxy if you want a subdomain or TLS.
+
+### The add-on, for the map (Home Assistant OS / Supervised only)
 
 1. Copy this folder to `/addons/spraying_control/` on your HA host — via the
    Samba or File editor add-on, or `git clone` into that path

@@ -1,0 +1,30 @@
+# Run Spraying Control as its own container, for Home Assistant Container /
+# Core installs (no Supervisor, so it cannot be an HA "add-on").
+#
+# 1. Create a long-lived access token: your HA profile page (click your name,
+#    bottom-left) -> Security tab -> Long-Lived Access Tokens -> Create Token.
+# 2. Copy .env.standalone.example to .env and fill in HA_URL and HA_TOKEN.
+# 3. docker compose -f docker-compose.standalone.yml up -d --build
+# 4. Open http://<this-host>:8099
+#
+# This talks to Home Assistant over its REST API (device_tracker history in,
+# sensor states out) - the same thing the add-on does through the Supervisor,
+# just over the network instead. No ingress, so put it behind your own reverse
+# proxy if you want a subdomain or TLS.
+
+services:
+  spraying-control:
+    build: .
+    container_name: spraying-control
+    restart: unless-stopped
+    ports:
+      - "8099:8099"
+    environment:
+      - HA_URL=${HA_URL}
+      - HA_TOKEN=${HA_TOKEN}
+    # If Home Assistant runs in Docker on this same host, join its network
+    # instead of publishing a port, and reach HA_URL by container name:
+    #   networks: [homeassistant]
+    # networks:
+    #   homeassistant:
+    #     external: true
