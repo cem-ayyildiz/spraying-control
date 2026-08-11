@@ -48,6 +48,30 @@ cards:
       - entity: sensor.spraying_sm_a356e_start_point
         name: Start point
 
+  - type: markdown
+    content: >
+      ## Analyse a saved track
+
+      Tap **Upload a track file** to pick a GPX/CSV/KML from your device.
+
+      Or drop a file into **Media** named `spray.gpx` and tap **Analyse file**.
+  - type: horizontal-stack
+    cards:
+      - type: button
+        name: Upload a track file…
+        icon: mdi:folder-upload
+        tap_action:
+          action: navigate
+          navigation_path: /config/integrations/integration/spraying_control
+      - type: button
+        name: Analyse /media/spray.gpx
+        icon: mdi:file-chart
+        tap_action:
+          action: perform-action
+          perform_action: spraying_control.analyze_file
+          data:
+            path: /media/spray.gpx
+
   - type: map
     title: Track & start point
     default_zoom: 18
