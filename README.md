@@ -140,6 +140,21 @@ without touching a keyboard:
 There's also a **Start point** sensor exposing the point's coordinates, so it
 shows on a map card next to your phone.
 
+#### Analyse a saved track file
+
+Got a track from a handheld GPS or another app? **Settings → Devices &
+services → Spraying Control → Configure → Analyse a track file** opens a file
+picker — choose a GPX, CSV, KML or GeoJSON and the sensors update from it.
+
+For automations, the `spraying_control.analyze_file` action analyses a file
+already on the host (drop it into `/media` first):
+
+```yaml
+action: spraying_control.analyze_file
+data:
+  path: /media/spray.gpx
+```
+
 ### A ready-made dashboard
 
 [docs/dashboard.yaml](docs/dashboard.yaml) is a Lovelace **view** (a tab) that

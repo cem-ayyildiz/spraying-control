@@ -36,6 +36,13 @@
     "step": {
       "init": {
         "title": "Spraying Control",
+        "menu_options": {
+          "settings": "Sprayer settings",
+          "upload": "Analyse a track file"
+        }
+      },
+      "settings": {
+        "title": "Sprayer settings",
         "data": {
           "swath_width_m": "Spray width",
           "tank_capacity_l": "Tank capacity",
@@ -48,10 +55,21 @@
           "high_accuracy": "Switch phone to high accuracy while recording",
           "daily_time": "Analyse automatically at (optional)"
         }
+      },
+      "upload": {
+        "title": "Analyse a track file",
+        "description": "Pick a GPX, CSV, KML or GeoJSON track from your device. It is analysed and the sensors update.",
+        "data": {
+          "file": "Track file"
+        }
       }
     },
     "error": {
-      "speed_window": "The slowest spraying speed must be below the fastest."
+      "speed_window": "The slowest spraying speed must be below the fastest.",
+      "analyze_failed": "Could not read that track. Try a GPX, CSV, KML or GeoJSON file."
+    },
+    "abort": {
+      "analyzed": "Track analysed — the sensors are updated."
     }
   },
   "entity": {
@@ -85,6 +103,20 @@
         "date": {
           "name": "Date",
           "description": "Local day to analyse. Defaults to today."
+        },
+        "config_entry_id": {
+          "name": "Sprayer",
+          "description": "Which configured sprayer to analyse. Defaults to all of them."
+        }
+      }
+    },
+    "analyze_file": {
+      "name": "Analyse a track file",
+      "description": "Analyses a GPX, CSV, KML or GeoJSON file on the Home Assistant host (for example one dropped into /media).",
+      "fields": {
+        "path": {
+          "name": "File path",
+          "description": "Path to the track file, e.g. /media/spray.gpx."
         },
         "config_entry_id": {
           "name": "Sprayer",

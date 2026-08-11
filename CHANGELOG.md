@@ -13,6 +13,18 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-11
+
+Upload a track file straight into Home Assistant.
+
+### Added
+- **Configure → Analyse a track file** — a native file picker in the options
+  flow. Choose a GPX, CSV, KML or GeoJSON from your device and the sensors
+  update from it, no add-on needed.
+- **`spraying_control.analyze_file` action** — analyses a track file already on
+  the host (e.g. dropped into `/media`), for automations and dashboard buttons.
+  Paths are restricted to Home Assistant's allowed directories.
+
 ## [0.3.0] - 2026-08-11
 
 Record a spray session from the phone, with no keyboard.

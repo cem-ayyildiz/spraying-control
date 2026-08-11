@@ -11,7 +11,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.spraying_control.const import DOMAIN, SERVICE_ANALYZE
-from custom_components.spraying_control.spraycontrol.demo import synthetic_run
+from custom_components.spraying_control.spraycontrol.demo import synthetic_run, to_gpx
 
 TRACKER = "device_tracker.sprayer"
 
@@ -218,7 +218,14 @@ async def test_service_reports_empty_history(recorder_mock, hass: HomeAssistant)
 async def test_options_flow_updates_settings(recorder_mock, hass: HomeAssistant) -> None:
     entry = await _setup(hass)
 
+    # The options flow opens on a menu; choose the settings step.
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.MENU
+    assert set(result["menu_options"]) >= {"settings", "upload"}
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     assert result["type"] is FlowResultType.FORM
 
     changed = {k: v for k, v in CONFIG.items() if k != "tracker"}
@@ -228,6 +235,47 @@ async def test_options_flow_updates_settings(recorder_mock, hass: HomeAssistant)
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["swath_width_m"] == 2.0
+
+
+async def test_analyze_bytes_populates_sensors(recorder_mock, hass: HomeAssistant) -> None:
+    """The upload path: raw file bytes in, coverage sensors out."""
+    entry = await _setup(hass)
+    track, _, _ = synthetic_run(interval_s=3.0)
+    gpx = to_gpx(track).encode()
+
+    await entry.runtime_data.async_analyze_bytes(gpx, "walk.gpx")
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.spraying_sprayer_area_sprayed").state not in (
+        STATE_UNAVAILABLE,
+        "unknown",
+    )
+    assert int(float(hass.states.get("sensor.spraying_sprayer_tank_loads").state)) == 3
+
+
+async def test_analyze_file_service(recorder_mock, hass: HomeAssistant, tmp_path) -> None:
+    await _setup(hass)
+    track, _, _ = synthetic_run(interval_s=3.0)
+    gpx = tmp_path / "walk.gpx"
+    gpx.write_text(to_gpx(track))
+    hass.config.allowlist_external_dirs.add(tmp_path)
+
+    await hass.services.async_call(
+        DOMAIN, "analyze_file", {"path": str(gpx)}, blocking=True
+    )
+    await hass.async_block_till_done()
+
+    assert int(float(hass.states.get("sensor.spraying_sprayer_refills").state)) == 2
+
+
+async def test_analyze_file_rejects_disallowed_path(recorder_mock, hass: HomeAssistant) -> None:
+    from homeassistant.exceptions import ServiceValidationError
+
+    await _setup(hass)
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN, "analyze_file", {"path": "/etc/passwd"}, blocking=True
+        )
 
 
 async def test_unload_entry(recorder_mock, hass: HomeAssistant) -> None:
