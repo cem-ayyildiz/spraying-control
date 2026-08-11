@@ -15,7 +15,15 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .const import ATTR_CONFIG_ENTRY_ID, ATTR_DATE, CONF_DAILY_TIME, DOMAIN, SERVICE_ANALYZE
+from .const import (
+    ATTR_CONFIG_ENTRY_ID,
+    ATTR_DATE,
+    ATTR_PATH,
+    CONF_DAILY_TIME,
+    DOMAIN,
+    SERVICE_ANALYZE,
+    SERVICE_ANALYZE_FILE,
+)
 from .coordinator import SprayingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,6 +35,13 @@ SprayingConfigEntry = ConfigEntry[SprayingCoordinator]
 SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_DATE): cv.date,
+        vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
+    }
+)
+
+SERVICE_FILE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_PATH): cv.string,
         vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
     }
 )
@@ -48,6 +63,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SprayingConfigEntry) ->
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded and not hass.config_entries.async_loaded_entries(DOMAIN):
         hass.services.async_remove(DOMAIN, SERVICE_ANALYZE)
+        hass.services.async_remove(DOMAIN, SERVICE_ANALYZE_FILE)
     return unloaded
 
 
@@ -86,23 +102,32 @@ def _register_service(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, SERVICE_ANALYZE):
         return
 
-    async def _handle(call: ServiceCall) -> None:
+    def _entries(call: ServiceCall) -> list:
         entry_id = call.data.get(ATTR_CONFIG_ENTRY_ID)
         entries = hass.config_entries.async_loaded_entries(DOMAIN)
         if entry_id:
             entries = [e for e in entries if e.entry_id == entry_id]
             if not entries:
                 raise ServiceValidationError(f"No loaded Spraying Control entry {entry_id}")
+        return entries
 
-        day = call.data.get(ATTR_DATE)
+    async def _run(entries: list, action) -> None:
         failures: list[str] = []
         for entry in entries:
             try:
-                await entry.runtime_data.async_analyze_day(day)
+                await action(entry)
             except UpdateFailed as err:
                 failures.append(f"{entry.title}: {err}")
-
         if failures and len(failures) == len(entries):
             raise ServiceValidationError("; ".join(failures))
 
+    async def _handle(call: ServiceCall) -> None:
+        day = call.data.get(ATTR_DATE)
+        await _run(_entries(call), lambda entry: entry.runtime_data.async_analyze_day(day))
+
+    async def _handle_file(call: ServiceCall) -> None:
+        path = call.data[ATTR_PATH]
+        await _run(_entries(call), lambda entry: entry.runtime_data.async_analyze_path(path))
+
     hass.services.async_register(DOMAIN, SERVICE_ANALYZE, _handle, schema=SERVICE_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_ANALYZE_FILE, _handle_file, schema=SERVICE_FILE_SCHEMA)

@@ -133,9 +133,12 @@ class SprayingControlConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class SprayingControlOptionsFlow(OptionsFlow):
-    """Adjust the machine settings without re-adding the sprayer."""
+    """Adjust the machine settings, or analyse an uploaded track file."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return self.async_show_menu(step_id="init", menu_options=["settings", "upload"])
+
+    async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -145,7 +148,41 @@ class SprayingControlOptionsFlow(OptionsFlow):
 
         current = {**self.config_entry.data, **self.config_entry.options}
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=_schema(user_input or current, include_tracker=False),
             errors=errors,
         )
+
+    async def async_step_upload(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Analyse a GPX / CSV / KML / GeoJSON file picked from the browser."""
+        from homeassistant.components.file_upload import process_uploaded_file
+        from homeassistant.helpers.update_coordinator import UpdateFailed
+
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            file_id = user_input["file"]
+            coordinator = self.config_entry.runtime_data
+
+            def _read() -> tuple[bytes, str]:
+                with process_uploaded_file(self.hass, file_id) as path:
+                    return path.read_bytes(), path.name
+
+            try:
+                data, name = await self.hass.async_add_executor_job(_read)
+                await coordinator.async_analyze_bytes(data, name)
+            except (UpdateFailed, OSError, ValueError):
+                errors["base"] = "analyze_failed"
+            else:
+                # Abort rather than create an entry: saving options would reload
+                # the entry and discard the result we just set.
+                return self.async_abort(reason="analyzed")
+
+        schema = vol.Schema(
+            {
+                vol.Required("file"): selector.FileSelector(
+                    selector.FileSelectorConfig(accept=".gpx,.csv,.tsv,.txt,.kml,.geojson,.json")
+                )
+            }
+        )
+        return self.async_show_form(step_id="upload", data_schema=schema, errors=errors)

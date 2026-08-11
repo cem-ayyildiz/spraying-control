@@ -10,3 +10,16 @@ analyze:
       selector:
         config_entry:
           integration: spraying_control
+
+analyze_file:
+  fields:
+    path:
+      required: true
+      example: "/media/spray.gpx"
+      selector:
+        text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spraying_control

@@ -19,7 +19,9 @@ CONF_DAILY_TIME: Final = "daily_time"
 CONF_HIGH_ACCURACY: Final = "high_accuracy"
 
 SERVICE_ANALYZE: Final = "analyze"
+SERVICE_ANALYZE_FILE: Final = "analyze_file"
 ATTR_DATE: Final = "date"
+ATTR_PATH: Final = "path"
 ATTR_CONFIG_ENTRY_ID: Final = "config_entry_id"
 
 DEFAULT_SWATH_WIDTH: Final = 1.0

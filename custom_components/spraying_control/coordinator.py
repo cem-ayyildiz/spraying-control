@@ -225,6 +225,43 @@ class SprayingCoordinator(DataUpdateCoordinator):
             len(result.gaps),
         )
 
+    async def async_analyze_bytes(self, data: bytes, filename: str) -> None:
+        """Analyse an uploaded track file (GPX, CSV, KML, GeoJSON, ...)."""
+        from .spraycontrol.analyze import analyze
+        from .spraycontrol.parsers import TrackParseError, parse_track
+
+        cfg, base = self._config()
+        try:
+            track = await self.hass.async_add_executor_job(parse_track, data, filename)
+            result = await self.hass.async_add_executor_job(
+                partial(analyze, track, cfg, base, None, False)
+            )
+        except (TrackParseError, ValueError) as err:
+            raise UpdateFailed(str(err)) from err
+        self.last_error = None
+        self.async_set_updated_data(result)
+        _LOGGER.debug("Analysed uploaded %s: %.3f ha sprayed", filename, result.coverage.sprayed_area_m2 / 10_000)
+
+    async def async_analyze_path(self, path: str) -> None:
+        """Analyse a track file already on the Home Assistant host."""
+        from pathlib import Path
+
+        if not self.hass.config.is_allowed_path(path):
+            raise UpdateFailed(
+                f"{path} is not in an allowed directory. Add its folder to "
+                "homeassistant.allowlist_external_dirs, or drop the file under /media."
+            )
+
+        def _read() -> tuple[bytes, str]:
+            p = Path(path)
+            return p.read_bytes(), p.name
+
+        try:
+            data, name = await self.hass.async_add_executor_job(_read)
+        except OSError as err:
+            raise UpdateFailed(f"could not read {path}: {err}") from err
+        await self.async_analyze_bytes(data, name)
+
     async def _async_history(self, start: datetime, end: datetime) -> list:
         """Read tracker states from the recorder, attributes included."""
         from homeassistant.components.recorder import get_instance
