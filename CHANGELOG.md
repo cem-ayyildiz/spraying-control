@@ -13,6 +13,19 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-11
+
+Run the real map without a Supervisor.
+
+### Added
+- `docker-compose.standalone.yml` and `.env.standalone.example`: run the web
+  interface as its own container on Home Assistant Container / Core installs,
+  where there is no Supervisor and therefore no Add-ons menu. It talks to Home
+  Assistant over the REST API via `HA_URL`/`HA_TOKEN` (the same fallback the
+  add-on already used when no `SUPERVISOR_TOKEN` is present) - reads tracker
+  history and pushes `sensor.spray_*` states. Verified end-to-end against a
+  real remote Home Assistant instance with no Supervisor involved.
+
 ## [0.5.0] - 2026-08-11
 
 See the coverage pattern in the dashboard.
