@@ -14,6 +14,7 @@ from .const import (
     CONF_BASE_DWELL,
     CONF_SWATH_WIDTH,
     CONF_DAILY_TIME,
+    CONF_HIGH_ACCURACY,
     CONF_MAX_ACCURACY,
     CONF_MAX_GAP,
     CONF_MAX_SPEED,
@@ -79,6 +80,9 @@ def _schema(defaults: dict[str, Any], include_tracker: bool = True) -> vol.Schem
             vol.Required(
                 CONF_MAX_ACCURACY, default=defaults.get(CONF_MAX_ACCURACY, DEFAULT_MAX_ACCURACY)
             ): _number(1, 100, 1, "m"),
+            vol.Required(
+                CONF_HIGH_ACCURACY, default=defaults.get(CONF_HIGH_ACCURACY, True)
+            ): selector.BooleanSelector(),
             vol.Optional(CONF_DAILY_TIME, default=defaults.get(CONF_DAILY_TIME, "")): (
                 selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TIME))
             ),

@@ -124,6 +124,30 @@ automation:
             left unsprayed.
 ```
 
+### Record a session from your phone
+
+The integration adds three controls to the device, so you can run a spray job
+without touching a keyboard:
+
+- **Set start point** (button) — stand where you refill and tap it; that spot
+  becomes your refill/base point for the session.
+- **Recording** (switch) — turn it on to start (it also switches your phone to
+  high-accuracy GPS, if that option is on), walk and spray, turn it off to stop
+  and analyse just that session.
+- **Analyse today** (button) — if you forgot to record, analyse the whole day's
+  track instead.
+
+There's also a **Start point** sensor exposing the point's coordinates, so it
+shows on a map card next to your phone.
+
+### A ready-made dashboard
+
+[docs/dashboard.yaml](docs/dashboard.yaml) is a Lovelace view that mirrors the
+web interface — the record controls, a map, gauges and the results. Add it with
+**Settings → Dashboards → your dashboard → ⋮ → Edit dashboard → Add view → (⋮)
+Edit in YAML**, and paste the `views:` entry. It assumes the device is
+`Spraying · SM-A356E`; change `sm_a356e` throughout if your tracker differs.
+
 ### The add-on, for the map
 
 1. Copy this folder to `/addons/spraying_control/` on your HA host — via the

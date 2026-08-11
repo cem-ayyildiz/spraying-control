@@ -45,6 +45,7 @@
           "max_speed_kmh": "Fastest spraying speed",
           "max_gap_s": "Maximum gap between fixes",
           "max_accuracy_m": "Worst GPS accuracy to accept",
+          "high_accuracy": "Switch phone to high accuracy while recording",
           "daily_time": "Analyse automatically at (optional)"
         }
       }
@@ -54,7 +55,15 @@
     }
   },
   "entity": {
+    "switch": {
+      "recording": { "name": "Recording" }
+    },
+    "button": {
+      "set_start_point": { "name": "Set start point" },
+      "analyze_today": { "name": "Analyse today" }
+    },
     "sensor": {
+      "start_point": { "name": "Start point" },
       "area_sprayed": { "name": "Area sprayed" },
       "volume_used": { "name": "Volume used" },
       "application_rate": { "name": "Application rate" },

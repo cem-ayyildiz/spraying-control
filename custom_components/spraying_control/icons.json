@@ -1,6 +1,14 @@
 {
   "entity": {
+    "switch": {
+      "recording": { "default": "mdi:record-circle", "state": { "off": "mdi:record-circle-outline" } }
+    },
+    "button": {
+      "set_start_point": { "default": "mdi:map-marker-plus" },
+      "analyze_today": { "default": "mdi:map-search" }
+    },
     "sensor": {
+      "start_point": { "default": "mdi:map-marker-radius" },
       "area_sprayed": { "default": "mdi:texture-box" },
       "volume_used": { "default": "mdi:cup-water" },
       "application_rate": { "default": "mdi:speedometer" },
