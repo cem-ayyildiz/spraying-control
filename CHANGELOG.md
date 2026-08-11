@@ -7,7 +7,9 @@ All notable changes to this project are recorded here. The format follows
 Versioning is done locally with `./scripts/release.sh <version>` (or
 `make release VERSION=<version>`), which keeps the version in sync across
 `pyproject.toml`, `config.yaml` and the integration `manifest.json`, stamps the
-release below, and creates the `v<version>` git tag.
+release below, creates the `v<version>` git tag, and publishes a matching
+GitHub Release. HACS lists **GitHub Releases**, not bare tags, so the Release is
+what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 

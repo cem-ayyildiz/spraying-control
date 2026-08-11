@@ -231,11 +231,11 @@ Versions live in three files (`pyproject.toml`, `config.yaml`, the integration
 ```bash
 make release VERSION=0.3.0
 # updates the three versions, stamps CHANGELOG.md, runs make validate,
-# commits, and tags v0.3.0. Then:
-git push origin main && git push origin v0.3.0
+# commits, tags v0.3.0, and offers to push and publish the GitHub Release.
 ```
 
-HACS installs from the newest `v*` tag, so a release is just that tag. See
+HACS lists **GitHub Releases**, not bare tags, so publishing the Release (which
+`make release` does) is what makes the update show up in Home Assistant. See
 [CHANGELOG.md](CHANGELOG.md) for the history.
 
 ### Layout

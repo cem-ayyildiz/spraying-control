@@ -64,9 +64,39 @@ git add pyproject.toml config.yaml custom_components/spraying_control/manifest.j
 git commit -m "release: v$version"
 git tag -a "v$version" -m "v$version"
 
-cat <<EOF
+# Pull this version's section out of the CHANGELOG to use as the release notes.
+# Kept in .git/ (not a temp dir) so the printed command still works later.
+notes_file=".git/RELEASE_NOTES_v$version.md"
+awk -v v="$version" '
+    $0 ~ "^## \\[" v "\\]" { grab=1; next }
+    grab && /^## \[/ { exit }
+    grab { print }
+' CHANGELOG.md > "$notes_file"
 
-Tagged v$version. To publish:
-  git push origin main
-  git push origin v$version
-EOF
+echo
+echo "Tagged v$version. Now push, then publish the GitHub Release."
+echo "HACS lists GitHub Releases, not bare tags, so the release is what makes"
+echo "the update show up in Home Assistant."
+echo
+echo "  git push origin main"
+echo "  git push origin v$version"
+
+if command -v gh >/dev/null 2>&1; then
+    printf '\nPublish the release now with gh? [y/N] '
+    read -r ans
+    if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+        git push origin main
+        git push origin "v$version"
+        gh release create "v$version" --verify-tag --latest \
+            --title "v$version" --notes-file "$notes_file"
+        echo "Published https://github.com/cem-ayyildiz/spraying-control/releases/tag/v$version"
+        rm -f "$notes_file"
+    else
+        echo
+        echo "When ready:"
+        echo "  gh release create v$version --verify-tag --latest --title v$version --notes-file $notes_file"
+    fi
+else
+    echo
+    echo "Then create a Release from the tag on GitHub (Releases -> Draft a new release)."
+fi
