@@ -142,11 +142,13 @@ shows on a map card next to your phone.
 
 ### A ready-made dashboard
 
-[docs/dashboard.yaml](docs/dashboard.yaml) is a Lovelace view that mirrors the
-web interface — the record controls, a map, gauges and the results. Add it with
-**Settings → Dashboards → your dashboard → ⋮ → Edit dashboard → Add view → (⋮)
-Edit in YAML**, and paste the `views:` entry. It assumes the device is
-`Spraying · SM-A356E`; change `sm_a356e` throughout if your tracker differs.
+[docs/dashboard.yaml](docs/dashboard.yaml) is a Lovelace **view** (a tab) that
+mirrors the web interface — the record controls, a map, gauges and the results.
+Add it by editing your dashboard → **+ (Add view)** → its ⋮ menu → **Edit in
+YAML** → paste the whole file → Save. (Don't use *Raw configuration editor* —
+that expects a whole dashboard and would replace your other tabs.) It assumes
+the device is `Spraying · SM-A356E`; change `sm_a356e` throughout if your
+tracker differs.
 
 ### The add-on, for the map
 
