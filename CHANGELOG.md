@@ -13,6 +13,22 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-11
+
+Record a spray session from the phone, with no keyboard.
+
+### Added
+- **Recording switch** — turn it on to start a session (and switch the phone to
+  high-accuracy GPS), off to stop and analyse just that session.
+- **Set start point button** — captures where the phone is right now as the
+  refill/base point for the session.
+- **Analyse today button** — analyse the whole day's track on demand.
+- **Start point sensor** exposing the point's coordinates, so it plots on a map
+  card next to the phone.
+- A "Switch phone to high accuracy while recording" option in the config flow.
+- [docs/dashboard.yaml](docs/dashboard.yaml): a ready-made Lovelace view with the
+  controls, a map, gauges and the results.
+
 ## [0.2.0] - 2026-08-11
 
 Reoriented the whole project from tractor/boom sprayers to a **garden owner with

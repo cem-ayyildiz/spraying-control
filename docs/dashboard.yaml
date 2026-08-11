@@ -1,0 +1,108 @@
+# Spraying Control dashboard
+#
+# A Lovelace view that mirrors the local web interface: the record controls, a
+# map, and the results. Uses only built-in cards, so nothing else to install.
+#
+# To use it:
+#   Settings -> Dashboards -> (3-dot menu) -> Raw configuration editor
+#   and paste the "views:" list, OR create a new dashboard and paste the whole
+#   file.
+#
+# The entity IDs below assume the device is named "Spraying · SM-A356E"
+# (tracker device_tracker.sm_a356e). If your tracker differs, replace
+# "sm_a356e" throughout, and set the map's device_tracker to your phone.
+
+title: Spraying
+views:
+  - title: Spraying
+    path: spraying
+    icon: mdi:sprinkler-variant
+    cards:
+      - type: markdown
+        content: >
+          ## Record a spray session
+
+          **1.** Stand where you refill and tap **Set start point.**
+          **2.** Tap **Recording** on, walk and spray your plot, tap it off.
+          **3.** The results below fill in.
+
+
+          Didn't record? Tap **Analyse today** to use the whole day's track.
+
+      - type: entities
+        show_header_toggle: false
+        entities:
+          - entity: button.spraying_sm_a356e_set_start_point
+            name: 1 · Set start point
+            icon: mdi:map-marker-plus
+          - entity: switch.spraying_sm_a356e_recording
+            name: 2 · Recording
+          - entity: button.spraying_sm_a356e_analyse_today
+            name: Analyse today
+          - type: divider
+          - entity: sensor.spraying_sm_a356e_start_point
+            name: Start point
+
+      - type: map
+        title: Track & start point
+        default_zoom: 18
+        entities:
+          - device_tracker.sm_a356e
+          - sensor.spraying_sm_a356e_start_point
+
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: gauge
+            entity: sensor.spraying_sm_a356e_coverage
+            name: Coverage
+            unit: "%"
+            min: 0
+            max: 100
+            needle: true
+            severity:
+              red: 0
+              yellow: 70
+              green: 90
+          - type: gauge
+            entity: sensor.spraying_sm_a356e_overlap
+            name: Overlap
+            unit: "%"
+            min: 0
+            max: 50
+            needle: true
+            severity:
+              green: 0
+              yellow: 15
+              red: 30
+
+      - type: glance
+        title: Results
+        columns: 3
+        show_name: true
+        show_state: true
+        entities:
+          - entity: sensor.spraying_sm_a356e_area_sprayed
+            name: Sprayed
+          - entity: sensor.spraying_sm_a356e_volume_used
+            name: Product
+          - entity: sensor.spraying_sm_a356e_application_rate
+            name: Rate
+          - entity: sensor.spraying_sm_a356e_refills
+            name: Refills
+          - entity: sensor.spraying_sm_a356e_missed_area
+            name: Missed
+          - entity: sensor.spraying_sm_a356e_distance
+            name: Walked
+
+      - type: entities
+        title: Details
+        show_header_toggle: false
+        entities:
+          - entity: sensor.spraying_sm_a356e_tank_loads
+            name: Tank loads
+          - entity: sensor.spraying_sm_a356e_working_time
+            name: Time spraying
+          - entity: sensor.spraying_sm_a356e_last_run
+            name: Last run

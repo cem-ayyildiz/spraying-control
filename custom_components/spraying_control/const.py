@@ -16,6 +16,7 @@ CONF_MAX_SPEED: Final = "max_speed_kmh"
 CONF_MAX_GAP: Final = "max_gap_s"
 CONF_MAX_ACCURACY: Final = "max_accuracy_m"
 CONF_DAILY_TIME: Final = "daily_time"
+CONF_HIGH_ACCURACY: Final = "high_accuracy"
 
 SERVICE_ANALYZE: Final = "analyze"
 ATTR_DATE: Final = "date"

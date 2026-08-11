@@ -100,6 +100,65 @@ async def test_setup_creates_all_sensors(recorder_mock, hass: HomeAssistant) -> 
     assert hass.services.has_service(DOMAIN, SERVICE_ANALYZE)
 
 
+async def test_setup_creates_controls(recorder_mock, hass: HomeAssistant) -> None:
+    await _setup(hass)
+    assert hass.states.get("switch.spraying_sprayer_recording") is not None
+    assert hass.states.get("button.spraying_sprayer_set_start_point") is not None
+    assert hass.states.get("button.spraying_sprayer_analyse_today") is not None
+    # The start-point sensor is available immediately (no analysis needed).
+    sp = hass.states.get("sensor.spraying_sprayer_start_point")
+    assert sp is not None
+    # A base is configured, so it reports the configured point.
+    assert sp.state == "set"
+    assert sp.attributes["latitude"] == CONFIG["base"]["latitude"]
+
+
+async def test_set_start_point_button_captures_location(recorder_mock, hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    hass.states.async_set(TRACKER, "not_home", {"latitude": 38.42, "longitude": 27.14})
+
+    await hass.services.async_call(
+        "button", "press", {"entity_id": "button.spraying_sprayer_set_start_point"}, blocking=True
+    )
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data.session_point == (38.42, 27.14)
+    sp = hass.states.get("sensor.spraying_sprayer_start_point")
+    assert sp.attributes["latitude"] == 38.42
+    assert sp.attributes["source"] == "captured"
+
+
+async def test_recording_switch_runs_a_session(recorder_mock, hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    states = _demo_states()
+
+    async def fake_history(start, end):
+        return states
+
+    coordinator._async_history = fake_history
+    hass.states.async_set(TRACKER, "not_home", {"latitude": 38.30, "longitude": 32.90})
+
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": "switch.spraying_sprayer_recording"}, blocking=True
+    )
+    assert coordinator.recording is True
+    assert hass.states.get("switch.spraying_sprayer_recording").state == "on"
+
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": "switch.spraying_sprayer_recording"}, blocking=True
+    )
+    await hass.async_block_till_done()
+
+    assert coordinator.recording is False
+    # Stopping analysed the session, so the sensors have filled in.
+    assert hass.states.get("sensor.spraying_sprayer_area_sprayed").state not in (
+        STATE_UNAVAILABLE,
+        "unknown",
+    )
+    assert int(float(hass.states.get("sensor.spraying_sprayer_tank_loads").state)) == 3
+
+
 async def test_analysis_populates_sensors(recorder_mock, hass: HomeAssistant) -> None:
     """Drive the whole pipeline: tracker history in, coverage numbers out."""
     entry = await _setup(hass)

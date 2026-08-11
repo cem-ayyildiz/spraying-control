@@ -174,7 +174,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(SprayingSensor(coordinator, entry, desc) for desc in SENSORS)
+    entities: list = [SprayingSensor(coordinator, entry, desc) for desc in SENSORS]
+    entities.append(StartPointSensor(coordinator, entry))
+    async_add_entities(entities)
 
 
 class SprayingSensor(CoordinatorEntity[SprayingCoordinator], SensorEntity, RestoreEntity):
@@ -238,3 +240,38 @@ class SprayingSensor(CoordinatorEntity[SprayingCoordinator], SensorEntity, Resto
         # Never poll, so the coordinator's own success flag is not meaningful
         # until a run has actually been analysed.
         return self.coordinator.data is not None or self._restored is not None
+
+
+class StartPointSensor(CoordinatorEntity[SprayingCoordinator], SensorEntity):
+    """The refill / start point, exposing latitude and longitude so the map card
+    can plot it next to the phone."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "start_point"
+    _attr_icon = "mdi:map-marker-radius"
+
+    def __init__(self, coordinator: SprayingCoordinator, entry: SprayingConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_start_point"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
+            manufacturer="Spraying Control",
+            model="GPS coverage analysis",
+            entry_type=DeviceEntryType.SERVICE,
+        )
+
+    @property
+    def native_value(self) -> str:
+        return "set" if self.coordinator.start_point is not None else "not set"
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        point = self.coordinator.start_point
+        if point is None:
+            return {"source": "none"}
+        return {
+            "latitude": point[0],
+            "longitude": point[1],
+            "source": "captured" if self.coordinator.session_point is not None else "configured",
+        }
