@@ -1,6 +1,6 @@
 """Raster coverage model.
 
-The whole analysis hangs off one grid of pass counts. Rasterising the boom
+The whole analysis hangs off one grid of pass counts. Rasterising the spray
 swath instead of doing polygon booleans keeps overlap counting exact and cheap:
 the number of passes over a cell falls straight out of the accumulator, and
 gaps are just the cells inside the field that nobody reached.
@@ -69,9 +69,9 @@ def make_grid(
     cfg: SprayerConfig,
     warnings: list[str] | None = None,
 ) -> CoverageGrid:
-    """Allocate a grid covering the sprayed extent plus room for the boom and
+    """Allocate a grid covering the sprayed extent plus room for the spray band and
     the morphological closing used to infer the field boundary."""
-    margin = cfg.boom_width_m * (cfg.field_close_factor + 1.0) + 4.0 * cfg.cell_size_m
+    margin = cfg.swath_width_m * (cfg.field_close_factor + 1.0) + 4.0 * cfg.cell_size_m
     xmin, xmax = float(np.min(x)) - margin, float(np.max(x)) + margin
     ymin, ymax = float(np.min(y)) - margin, float(np.max(y)) + margin
 
@@ -109,8 +109,8 @@ def swath_windows(
     Working a window at a time keeps every operation local to the few hundred
     cells a segment actually touches, rather than the whole field.
 
-    The boom is a line, so the two ends of the polyline get square caps: a pass
-    sprays exactly ``length x boom_width``. Interior joins stay round, which is
+    The spray band is centred on the path, so the two ends of the polyline get square caps: a pass
+    sprays exactly ``length x swath_width``. Interior joins stay round, which is
     what fills the wedge on the outside of a turn.
     """
     ny, nx = grid.counts.shape
@@ -170,7 +170,7 @@ def infer_field_mask(covered: np.ndarray, cfg: SprayerConfig, cell: float) -> np
     the field — and therefore into a detectable gap once the sprayed area is
     subtracted.
     """
-    radius_cells = max(1, int(round(cfg.boom_width_m * cfg.field_close_factor / cell)))
+    radius_cells = max(1, int(round(cfg.swath_width_m * cfg.field_close_factor / cell)))
     struct = _disk(radius_cells)
     closed = ndimage.binary_closing(covered, structure=struct, border_value=0)
     return ndimage.binary_fill_holes(closed)

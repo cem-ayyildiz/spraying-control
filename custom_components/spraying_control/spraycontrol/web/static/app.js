@@ -44,10 +44,19 @@ function drawBase() {
   const lat = parseFloat($('base-lat').value);
   const lon = parseFloat($('base-lon').value);
   if (!isFinite(lat) || !isFinite(lon)) return;
-  const radius = parseFloat($('base-radius').value) || 30;
-  L.circle([lat, lon], { radius, color: '#3ddc97', weight: 2, fillOpacity: 0.12 }).addTo(layers.base);
-  L.circleMarker([lat, lon], { radius: 5, color: '#3ddc97', fillColor: '#3ddc97', fillOpacity: 1 })
-    .bindTooltip('Base / refill point').addTo(layers.base);
+  const radius = parseFloat($('base-radius').value) || 8;
+  // Decorative, so it never intercepts a map click while re-picking.
+  L.circle([lat, lon], { radius, color: '#3ddc97', weight: 2, fillOpacity: 0.12, interactive: false })
+    .addTo(layers.base);
+  // A draggable pin so the point can be nudged without re-clicking.
+  const marker = L.marker([lat, lon], { draggable: true, autoPan: true })
+    .bindTooltip('Refill point — drag to move').addTo(layers.base);
+  marker.on('dragend', () => {
+    const p = marker.getLatLng();
+    $('base-lat').value = p.lat.toFixed(6);
+    $('base-lon').value = p.lng.toFixed(6);
+    drawBase();
+  });
 }
 
 function drawField() {
@@ -64,7 +73,7 @@ function drawField() {
     L.polygon(state.fieldRing.map(([lon, lat]) => [lat, lon]), {
       color: '#f5c211', weight: 2, fillOpacity: 0.05,
     }).addTo(layers.field);
-    $('field-note').textContent = `Field boundary set (${state.fieldRing.length - 1} points).`;
+    $('field-note').textContent = `Plot boundary set (${state.fieldRing.length - 1} points).`;
   }
 }
 
@@ -80,7 +89,7 @@ map.on('click', (e) => {
   }
   if (state.drawing) {
     state.drawing.push([e.latlng.lng, e.latlng.lat]);
-    hint(`Field boundary: ${state.drawing.length} points — click "Finish" when done`);
+    hint(`Plot boundary: ${state.drawing.length} points — click "Finish" when done`);
     drawField();
   }
 });
@@ -89,6 +98,32 @@ $('pick-base').addEventListener('click', () => {
   state.pickingBase = !state.pickingBase;
   $('pick-base').classList.toggle('active', state.pickingBase);
   hint(state.pickingBase ? 'Click the map to set the refill point' : null);
+});
+
+$('locate').addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    hint('This browser cannot share a location.');
+    return;
+  }
+  const btn = $('locate');
+  btn.disabled = true;
+  hint('Finding your location…');
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      $('base-lat').value = latitude.toFixed(6);
+      $('base-lon').value = longitude.toFixed(6);
+      map.setView([latitude, longitude], 19);
+      drawBase();
+      hint(null);
+      btn.disabled = false;
+    },
+    (err) => {
+      hint(`Could not get your location: ${err.message}`);
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000 },
+  );
 });
 
 $('clear-base').addEventListener('click', () => {
@@ -106,7 +141,7 @@ $('draw-field').addEventListener('click', () => {
       state.fieldRing = [...state.drawing, state.drawing[0]];
     }
     state.drawing = null;
-    btn.textContent = 'Draw field boundary';
+    btn.textContent = 'Draw plot boundary';
     btn.classList.remove('active');
     hint(null);
   } else {
@@ -114,7 +149,7 @@ $('draw-field').addEventListener('click', () => {
     state.fieldRing = null;
     btn.textContent = 'Finish';
     btn.classList.add('active');
-    hint('Click the map to trace the field boundary');
+    hint('Click the map to trace the plot boundary');
   }
   drawField();
 });
@@ -122,7 +157,7 @@ $('draw-field').addEventListener('click', () => {
 $('clear-field').addEventListener('click', () => {
   state.fieldRing = null;
   state.drawing = null;
-  $('draw-field').textContent = 'Draw field boundary';
+  $('draw-field').textContent = 'Draw plot boundary';
   $('draw-field').classList.remove('active');
   hint(null);
   drawField();
@@ -186,12 +221,24 @@ async function loadTrackers() {
 $('day').valueAsDate = new Date();
 $('tz-offset').value = -new Date().getTimezoneOffset() / 60;
 
-/* Seed the form from the add-on options, so the machine only gets set up once. */
+/* Spray-width quick presets. Clicking one fills the number box; typing a custom
+   value clears the highlight. */
+function syncSwathPresets() {
+  const v = parseFloat($('swath').value);
+  document.querySelectorAll('#swath-presets button').forEach((b) =>
+    b.classList.toggle('active', parseFloat(b.dataset.swath) === v));
+}
+document.querySelectorAll('#swath-presets button').forEach((b) => {
+  b.addEventListener('click', () => { $('swath').value = b.dataset.swath; syncSwathPresets(); });
+});
+$('swath').addEventListener('input', syncSwathPresets);
+
+/* Seed the form from the add-on options, so the sprayer only gets set up once. */
 (async function applyDefaults() {
   try {
     const d = await (await fetch('api/defaults')).json();
     const fields = {
-      boom: 'boom', tank: 'tank', 'base-radius': 'base_radius', 'base-dwell': 'base_dwell',
+      swath: 'swath', tank: 'tank', 'base-radius': 'base_radius', 'base-dwell': 'base_dwell',
       'min-speed': 'min_speed', 'max-speed': 'max_speed', prefix: 'prefix',
     };
     for (const [id, key] of Object.entries(fields)) {
@@ -203,6 +250,7 @@ $('tz-offset').value = -new Date().getTimezoneOffset() / 60;
       map.setView([d.base_lat, d.base_lon], 15);
       drawBase();
     }
+    syncSwathPresets();
     if (d.addon) {
       // Inside Home Assistant the tracker source is the point of the add-on.
       document.querySelector('.tab[data-source="ha"]').click();
@@ -238,7 +286,7 @@ $('run').addEventListener('click', async () => {
     fd.append('tz_offset', $('tz-offset').value);
   }
 
-  ['boom', 'tank', 'base-lat', 'base-lon', 'base-radius', 'base-dwell',
+  ['swath', 'tank', 'base-lat', 'base-lon', 'base-radius', 'base-dwell',
    'min-speed', 'max-speed', 'max-gap', 'max-accuracy', 'cell', 'min-gap-area',
   ].forEach((id) => fd.append(id.replace(/-/g, '_'), $(id).value));
 
@@ -322,23 +370,26 @@ function paint(data) {
   layers.transport.clearLayers();
   layers.gaps.clearLayers();
 
+  // Every analysis layer is decorative and non-interactive, so that picking or
+  // drawing on the map afterwards is never swallowed by a drawn feature.
   data.track.transport.forEach((line) =>
-    L.polyline(line, { color: '#6b7c93', weight: 1.5, opacity: 0.7, dashArray: '4,4' }).addTo(layers.transport));
+    L.polyline(line, { color: '#6b7c93', weight: 1.5, opacity: 0.7, dashArray: '4,4', interactive: false }).addTo(layers.transport));
   data.track.spraying.forEach((line) =>
-    L.polyline(line, { color: '#ffffff', weight: 1, opacity: 0.35 }).addTo(layers.spraying));
+    L.polyline(line, { color: '#ffffff', weight: 1, opacity: 0.35, interactive: false }).addTo(layers.spraying));
 
   if (data.has_overlay) {
-    layers.overlay = L.imageOverlay(`api/result/${data.id}/overlay.png`, data.bounds, { opacity: 0.85 });
+    layers.overlay = L.imageOverlay(`api/result/${data.id}/overlay.png`, data.bounds, { opacity: 0.85, interactive: false });
     layers.overlay.addTo(map);
   }
 
   data.gaps.slice(0, 30).forEach((g, i) => {
     if (g.polygon && g.polygon.length >= 4) {
       L.polygon(g.polygon.map(([lon, lat]) => [lat, lon]), {
-        color: '#ff2d55', weight: 2, fill: false,
+        color: '#ff2d55', weight: 2, fill: false, interactive: false,
       }).addTo(layers.gaps);
     }
     L.marker([g.lat, g.lon], {
+      interactive: false,
       icon: L.divIcon({
         className: '', html: `<div class="gap-label">${i + 1}: ${g.area_m2.toLocaleString()} m&sup2;</div>`,
         iconSize: null,

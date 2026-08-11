@@ -181,7 +181,7 @@ def _parse_field(field_geojson: str | None) -> list | None:
 
 
 def _config(
-    boom: str | None,
+    swath: str | None,
     tank: str | None,
     min_speed: str | None,
     max_speed: str | None,
@@ -192,14 +192,14 @@ def _config(
 ) -> SprayerConfig:
     try:
         return SprayerConfig(
-            boom_width_m=_f(boom, 12.0),
-            tank_capacity_l=_f(tank, 1000.0),
-            min_speed_kmh=_f(min_speed, 1.5),
-            max_speed_kmh=_f(max_speed, 18.0),
-            max_gap_s=_f(max_gap, 60.0),
-            max_accuracy_m=_f(max_accuracy, 30.0),
-            cell_size_m=_f(cell, 1.0),
-            min_gap_area_m2=_f(min_gap_area, 25.0),
+            swath_width_m=_f(swath, 1.0),
+            tank_capacity_l=_f(tank, 18.0),
+            min_speed_kmh=_f(min_speed, 0.4),
+            max_speed_kmh=_f(max_speed, 4.5),
+            max_gap_s=_f(max_gap, 45.0),
+            max_accuracy_m=_f(max_accuracy, 25.0),
+            cell_size_m=_f(cell, 0.25),
+            min_gap_area_m2=_f(min_gap_area, 2.0),
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc))
@@ -216,8 +216,8 @@ def _base(
     return BaseLocation(
         lat=_f(base_lat, 0.0),
         lon=_f(base_lon, 0.0),
-        radius_m=_f(base_radius, 30.0),
-        min_dwell_s=_f(base_dwell, 120.0),
+        radius_m=_f(base_radius, 8.0),
+        min_dwell_s=_f(base_dwell, 60.0),
     )
 
 
@@ -225,7 +225,7 @@ def _base(
 async def api_analyze(
     file: UploadFile | None = None,
     source: str = Form("file"),
-    boom: str = Form(None),
+    swath: str = Form(None),
     tank: str = Form(None),
     base_lat: str = Form(None),
     base_lon: str = Form(None),
@@ -242,11 +242,11 @@ async def api_analyze(
     day: str = Form(None),
     tz_offset: str = Form(None),
 ):
-    cfg = _config(boom, tank, min_speed, max_speed, max_gap, max_accuracy, cell, min_gap_area)
+    cfg = _config(swath, tank, min_speed, max_speed, max_gap, max_accuracy, cell, min_gap_area)
     base = _base(base_lat, base_lon, base_radius, base_dwell)
 
     if source == "demo":
-        track, demo_base, _ = synthetic_run(boom_width_m=cfg.boom_width_m)
+        track, demo_base, _ = synthetic_run(swath_width_m=cfg.swath_width_m)
         base = base or demo_base
     elif source == "ha":
         from ..ha import HAClient, HAError, day_bounds
@@ -349,14 +349,14 @@ async def api_defaults():
 
     return {
         "addon": os.environ.get("SPRAYCONTROL_ADDON") == "1",
-        "boom": env("SPRAY_BOOM_WIDTH_M", 12.0),
-        "tank": env("SPRAY_TANK_CAPACITY_L", 1000.0),
+        "swath": env("SPRAY_SWATH_WIDTH_M", 1.0),
+        "tank": env("SPRAY_TANK_CAPACITY_L", 18.0),
         "base_lat": lat if has_base else None,
         "base_lon": lon if has_base else None,
-        "base_radius": env("SPRAY_BASE_RADIUS_M", 30.0),
-        "base_dwell": env("SPRAY_BASE_MIN_STOP_S", 120.0),
-        "min_speed": env("SPRAY_MIN_SPEED_KMH", 1.5),
-        "max_speed": env("SPRAY_MAX_SPEED_KMH", 18.0),
+        "base_radius": env("SPRAY_BASE_RADIUS_M", 8.0),
+        "base_dwell": env("SPRAY_BASE_MIN_STOP_S", 60.0),
+        "min_speed": env("SPRAY_MIN_SPEED_KMH", 0.4),
+        "max_speed": env("SPRAY_MAX_SPEED_KMH", 4.5),
         "prefix": os.environ.get("SPRAY_SENSOR_PREFIX", "spray"),
     }
 

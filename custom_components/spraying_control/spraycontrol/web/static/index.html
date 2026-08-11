@@ -13,7 +13,7 @@
   <aside id="panel">
     <header>
       <h1>Spraying Control</h1>
-      <p class="sub">Coverage, misses, overlap and product use from a GPS track.</p>
+      <p class="sub">Coverage, missed strips, overlap and refills from your walk with a knapsack sprayer.</p>
     </header>
 
     <section>
@@ -43,37 +43,49 @@
       </div>
 
       <div class="pane" data-pane="demo">
-        <p class="note">A synthetic run with one skipped pass and one overlapping
-        pass built in, so you can see what each looks like on the map.</p>
+        <p class="note">A synthetic walk over a small plot with one skipped lane
+        and one overlapping lane built in, so you can see what each looks like
+        on the map.</p>
       </div>
     </section>
 
     <section>
-      <h2>2 &middot; Machine</h2>
-      <div class="row">
-        <label>Boom width <span class="unit">m</span><input type="number" id="boom" value="12" step="0.1" min="0.1"></label>
-        <label>Tank <span class="unit">L</span><input type="number" id="tank" value="1000" step="10" min="1"></label>
-      </div>
+      <h2>2 &middot; Sprayer</h2>
+      <label>Spray width &mdash; how wide a band you treat on one pass
+        <div class="presets" id="swath-presets">
+          <button type="button" data-swath="0.5">0.5 m</button>
+          <button type="button" data-swath="1" class="active">1 m</button>
+          <button type="button" data-swath="1.5">1.5 m</button>
+          <button type="button" data-swath="2">2 m</button>
+        </div>
+        <input type="number" id="swath" value="1" step="0.1" min="0.1">
+      </label>
+      <label>Tank capacity <span class="unit">L</span>
+        <input type="number" id="tank" value="18" step="1" min="1">
+      </label>
     </section>
 
     <section>
-      <h2>3 &middot; Base &amp; field</h2>
-      <p class="note">Returns to base are counted as refills. Total product = tank &times; loads.</p>
+      <h2>3 &middot; Refill point &amp; plot</h2>
+      <p class="note">Where you refill the backpack. Walking back here counts as
+      a refill; total product = tank &times; refills.</p>
       <div class="row">
-        <label>Base lat <input type="number" id="base-lat" step="0.000001" placeholder="unset"></label>
-        <label>Base lon <input type="number" id="base-lon" step="0.000001" placeholder="unset"></label>
+        <label>Lat <input type="number" id="base-lat" step="0.000001" placeholder="unset"></label>
+        <label>Lon <input type="number" id="base-lon" step="0.000001" placeholder="unset"></label>
       </div>
       <div class="row">
-        <label>Radius <span class="unit">m</span><input type="number" id="base-radius" value="30" min="5"></label>
-        <label>Min stop <span class="unit">s</span><input type="number" id="base-dwell" value="120" min="10"></label>
+        <label>Radius <span class="unit">m</span><input type="number" id="base-radius" value="8" min="2"></label>
+        <label>Min stop <span class="unit">s</span><input type="number" id="base-dwell" value="60" min="10"></label>
       </div>
       <div class="btn-row">
-        <button type="button" id="pick-base" class="ghost">Pick base on map</button>
+        <button type="button" id="pick-base" class="ghost">Pick refill point on map</button>
+        <button type="button" id="locate" class="ghost">Use my location</button>
         <button type="button" id="clear-base" class="ghost">Clear</button>
       </div>
+      <p class="note">Click the map to drop the point, then drag it to fine-tune.</p>
       <div class="btn-row">
-        <button type="button" id="draw-field" class="ghost">Draw field boundary</button>
-        <button type="button" id="clear-field" class="ghost">Clear field</button>
+        <button type="button" id="draw-field" class="ghost">Draw plot boundary</button>
+        <button type="button" id="clear-field" class="ghost">Clear plot</button>
       </div>
       <div id="field-note" class="note"></div>
     </section>
@@ -81,16 +93,16 @@
     <details id="advanced">
       <summary>Advanced</summary>
       <div class="row">
-        <label>Min speed <span class="unit">km/h</span><input type="number" id="min-speed" value="1.5" step="0.1"></label>
-        <label>Max speed <span class="unit">km/h</span><input type="number" id="max-speed" value="18" step="0.5"></label>
+        <label>Min speed <span class="unit">km/h</span><input type="number" id="min-speed" value="0.4" step="0.1"></label>
+        <label>Max speed <span class="unit">km/h</span><input type="number" id="max-speed" value="4.5" step="0.5"></label>
       </div>
       <div class="row">
-        <label>Max fix gap <span class="unit">s</span><input type="number" id="max-gap" value="60" step="5"></label>
-        <label>Max accuracy <span class="unit">m</span><input type="number" id="max-accuracy" value="30" step="5"></label>
+        <label>Max fix gap <span class="unit">s</span><input type="number" id="max-gap" value="45" step="5"></label>
+        <label>Max accuracy <span class="unit">m</span><input type="number" id="max-accuracy" value="25" step="5"></label>
       </div>
       <div class="row">
-        <label>Cell size <span class="unit">m</span><input type="number" id="cell" value="1" step="0.5" min="0.25"></label>
-        <label>Ignore gaps &lt; <span class="unit">m&sup2;</span><input type="number" id="min-gap-area" value="25" step="5"></label>
+        <label>Cell size <span class="unit">m</span><input type="number" id="cell" value="0.25" step="0.05" min="0.1"></label>
+        <label>Ignore gaps &lt; <span class="unit">m&sup2;</span><input type="number" id="min-gap-area" value="2" step="1"></label>
       </div>
     </details>
 

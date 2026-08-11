@@ -3,29 +3,30 @@
     "step": {
       "user": {
         "title": "Spraying Control",
-        "description": "Pick the device tracker that rides on the sprayer, then describe the machine. Returns to the base location are counted as tank refills.",
+        "description": "Pick the phone or tracker you carry while spraying, then describe your knapsack sprayer. Walking back to the refill point is counted as a tank refill.",
         "data": {
           "tracker": "Device tracker",
-          "boom_width_m": "Boom width",
+          "swath_width_m": "Spray width",
           "tank_capacity_l": "Tank capacity",
-          "base": "Base / refill location",
+          "base": "Refill point",
           "base_min_stop_s": "Minimum stop to count as a refill",
-          "min_speed_kmh": "Minimum working speed",
-          "max_speed_kmh": "Maximum working speed",
+          "min_speed_kmh": "Slowest spraying speed",
+          "max_speed_kmh": "Fastest spraying speed",
           "max_gap_s": "Maximum gap between fixes",
           "max_accuracy_m": "Worst GPS accuracy to accept",
           "daily_time": "Analyse automatically at (optional)"
         },
         "data_description": {
-          "base": "Drag the marker to where the tank is filled, and size the circle to cover the yard.",
-          "max_speed_kmh": "Anything faster is treated as road transport and is not sprayed.",
-          "max_gap_s": "No swath is drawn across a longer silence, because the route is unknown.",
+          "swath_width_m": "How wide a band you treat on one pass. A single wide-angle nozzle covers roughly a metre.",
+          "base": "Drag the marker to where you refill the backpack, and size the circle to cover that spot.",
+          "max_speed_kmh": "Anything faster is treated as just walking, not spraying.",
+          "max_gap_s": "No band is drawn across a longer silence, because the route is unknown.",
           "daily_time": "Leave empty to only analyse on demand via the spraying_control.analyze action."
         }
       }
     },
     "error": {
-      "speed_window": "The minimum working speed must be below the maximum."
+      "speed_window": "The slowest spraying speed must be below the fastest."
     },
     "abort": {
       "already_configured": "That device tracker is already set up."
@@ -36,12 +37,12 @@
       "init": {
         "title": "Spraying Control",
         "data": {
-          "boom_width_m": "Boom width",
+          "swath_width_m": "Spray width",
           "tank_capacity_l": "Tank capacity",
-          "base": "Base / refill location",
+          "base": "Refill point",
           "base_min_stop_s": "Minimum stop to count as a refill",
-          "min_speed_kmh": "Minimum working speed",
-          "max_speed_kmh": "Maximum working speed",
+          "min_speed_kmh": "Slowest spraying speed",
+          "max_speed_kmh": "Fastest spraying speed",
           "max_gap_s": "Maximum gap between fixes",
           "max_accuracy_m": "Worst GPS accuracy to accept",
           "daily_time": "Analyse automatically at (optional)"
@@ -49,7 +50,7 @@
       }
     },
     "error": {
-      "speed_window": "The minimum working speed must be below the maximum."
+      "speed_window": "The slowest spraying speed must be below the fastest."
     }
   },
   "entity": {

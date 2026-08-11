@@ -180,7 +180,7 @@ class HAClient:
             "track": result.track_name,
             "run_start": _iso(result.start_t),
             "run_end": _iso(result.end_t),
-            "boom_width_m": result.config.boom_width_m,
+            "swath_width_m": result.config.swath_width_m,
             "tank_capacity_l": result.config.tank_capacity_l,
         }
 

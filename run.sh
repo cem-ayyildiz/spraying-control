@@ -14,7 +14,7 @@ with open(sys.argv[1]) as fh:
     options = json.load(fh)
 
 mapping = {
-    "boom_width_m": "SPRAY_BOOM_WIDTH_M",
+    "swath_width_m": "SPRAY_SWATH_WIDTH_M",
     "tank_capacity_l": "SPRAY_TANK_CAPACITY_L",
     "base_latitude": "SPRAY_BASE_LATITUDE",
     "base_longitude": "SPRAY_BASE_LONGITUDE",

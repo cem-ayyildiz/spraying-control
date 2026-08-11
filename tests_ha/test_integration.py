@@ -17,14 +17,14 @@ TRACKER = "device_tracker.sprayer"
 
 CONFIG = {
     "tracker": TRACKER,
-    "boom_width_m": 12.0,
-    "tank_capacity_l": 1000.0,
-    "base": {"latitude": 38.3005, "longitude": 32.8985, "radius": 40.0},
-    "base_min_stop_s": 120.0,
-    "min_speed_kmh": 1.5,
-    "max_speed_kmh": 18.0,
-    "max_gap_s": 60.0,
-    "max_accuracy_m": 30.0,
+    "swath_width_m": 1.0,
+    "tank_capacity_l": 18.0,
+    "base": {"latitude": 38.3005, "longitude": 32.8985, "radius": 8.0},
+    "base_min_stop_s": 60.0,
+    "min_speed_kmh": 0.4,
+    "max_speed_kmh": 4.5,
+    "max_gap_s": 45.0,
+    "max_accuracy_m": 25.0,
     "daily_time": "",
 }
 
@@ -36,12 +36,12 @@ EXPECTED_SENSORS = [
 
 def _demo_states() -> list[State]:
     """The synthetic run, shaped like Companion-app tracker history."""
-    track, _, _ = synthetic_run(interval_s=4.0)
+    track, _, _ = synthetic_run(interval_s=3.0)
     return [
         State(
             TRACKER,
             "not_home",
-            {"latitude": float(la), "longitude": float(lo), "gps_accuracy": 6, "source_type": "gps"},
+            {"latitude": float(la), "longitude": float(lo), "gps_accuracy": 2, "source_type": "gps"},
             last_updated=datetime.fromtimestamp(float(ts), timezone.utc),
         )
         for ts, la, lo in zip(track.t, track.lat, track.lon)
@@ -68,13 +68,13 @@ async def test_config_flow_creates_entry(recorder_mock, hass: HomeAssistant) -> 
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Spraying · Sprayer phone"
-    assert result["data"]["boom_width_m"] == 12.0
+    assert result["data"]["swath_width_m"] == 1.0
 
 
 async def test_config_flow_rejects_inverted_speed_window(recorder_mock, hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {**CONFIG, "min_speed_kmh": 20.0, "max_speed_kmh": 10.0}
+        result["flow_id"], {**CONFIG, "min_speed_kmh": 5.0, "max_speed_kmh": 3.0}
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"min_speed_kmh": "speed_window"}
@@ -121,15 +121,15 @@ async def test_analysis_populates_sensors(recorder_mock, hass: HomeAssistant) ->
         assert state is not None
         return state.state
 
-    # The synthetic run works 19 passes of 300 m with a 12 m boom.
-    assert float(value("area_sprayed")) == pytest.approx(6.9, abs=0.4)
+    # The synthetic walk works 23 lanes of 40 m with a 1 m spray band.
+    assert float(value("area_sprayed")) == pytest.approx(0.09, abs=0.03)
     assert int(float(value("refills"))) == 2
     assert int(float(value("tank_loads"))) == 3
-    # Two full tanks plus a scaled partial.
-    assert 2000 < float(value("volume_used")) <= 3000
+    # Two full 18 L tanks plus a scaled partial.
+    assert 36 < float(value("volume_used")) <= 54
     assert float(value("application_rate")) > 0
-    # One pass is skipped and one is shifted, so both defects must show.
-    assert float(value("missed_area")) > 0.03
+    # One lane is skipped and one is shifted, so both defects must show.
+    assert float(value("missed_area")) > 0.003
     assert float(value("overlap")) > 0.5
 
     loads = hass.states.get("sensor.spraying_sprayer_volume_used").attributes["loads"]
@@ -138,7 +138,7 @@ async def test_analysis_populates_sensors(recorder_mock, hass: HomeAssistant) ->
 
     gaps = hass.states.get("sensor.spraying_sprayer_missed_area").attributes
     assert gaps["patch_count"] >= 1
-    assert gaps["patches"][0]["max_width_m"] > 4
+    assert gaps["patches"][0]["max_width_m"] > 0.5
 
     last_run = hass.states.get("sensor.spraying_sprayer_last_run")
     assert last_run.state != STATE_UNAVAILABLE
@@ -163,12 +163,12 @@ async def test_options_flow_updates_settings(recorder_mock, hass: HomeAssistant)
     assert result["type"] is FlowResultType.FORM
 
     changed = {k: v for k, v in CONFIG.items() if k != "tracker"}
-    changed["boom_width_m"] = 24.0
+    changed["swath_width_m"] = 2.0
     result = await hass.config_entries.options.async_configure(result["flow_id"], changed)
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options["boom_width_m"] == 24.0
+    assert entry.options["swath_width_m"] == 2.0
 
 
 async def test_unload_entry(recorder_mock, hass: HomeAssistant) -> None:

@@ -63,64 +63,65 @@ class PathBuilder:
 
 def synthetic_run(
     *,
-    # A farmstead on the Konya plain, so the demo sits on real arable land.
+    # A garden plot; the exact spot only matters for the map backdrop.
     base_lat: float = 38.3005,
     base_lon: float = 32.8985,
-    boom_width_m: float = 12.0,
-    n_passes: int = 20,
-    pass_length_m: float = 300.0,
-    field_offset_m: float = 400.0,
-    passes_per_load: int = 7,
-    spray_speed_kmh: float = 8.0,
-    transport_speed_kmh: float = 25.0,
-    turn_speed_kmh: float = 6.0,
+    swath_width_m: float = 1.0,
+    n_passes: int = 24,
+    pass_length_m: float = 40.0,
+    field_offset_m: float = 12.0,
+    passes_per_load: int = 8,
+    spray_speed_kmh: float = 2.5,
+    transport_speed_kmh: float = 5.0,
+    turn_speed_kmh: float = 1.2,
     interval_s: float = 2.0,
-    skip_passes: tuple[int, ...] = (11,),
+    skip_passes: tuple[int, ...] = (13,),
     shift_passes: dict[int, float] | None = None,
-    refill_dwell_s: float = 420.0,
+    refill_dwell_s: float = 150.0,
     noise_m: float = 0.0,
     seed: int = 7,
 ) -> tuple[Track, BaseLocation, SprayerConfig]:
-    """Build a plausible spraying run with deliberate, measurable defects.
+    """Build a plausible knapsack run with deliberate, measurable defects.
 
-    ``skip_passes`` omits whole passes, leaving a boom-wide miss.
-    ``shift_passes`` maps a pass index to a lateral offset in metres, which
-    creates a measurable overlap with its neighbour.
+    A garden owner walks back-and-forth lanes across a plot, refilling the
+    backpack at a water point. ``skip_passes`` omits whole lanes, leaving a
+    swath-wide miss. ``shift_passes`` maps a lane index to a lateral offset in
+    metres, which creates a measurable overlap with its neighbour.
     """
     rng = np.random.default_rng(seed)
     if shift_passes is None:
-        shift_passes = {4: -5.0}
+        shift_passes = {5: -0.4}
     plane = LocalPlane(base_lat, base_lon)
 
     builder = PathBuilder(interval_s=interval_s)
     builder.start_at(0.0, 0.0)
-    builder.dwell(180.0, jitter_m=1.0, rng=rng)  # initial fill
+    builder.dwell(90.0, jitter_m=0.6, rng=rng)  # initial fill
 
     def pass_x(index: int) -> float:
-        return field_offset_m + boom_width_m * (index + 0.5) + shift_passes.get(index, 0.0)
+        return field_offset_m + swath_width_m * (index + 0.5) + shift_passes.get(index, 0.0)
 
     worked = 0
     for i in range(n_passes):
         if i in skip_passes:
             continue
         x = pass_x(i)
-        # Alternate direction, the way a field is actually worked.
+        # Alternate direction, the way you actually walk a plot.
         y_from, y_to = (0.0, pass_length_m) if worked % 2 == 0 else (pass_length_m, 0.0)
 
         if worked > 0 and worked % passes_per_load == 0:
-            builder.move_to(0.0, 0.0, transport_speed_kmh)
-            builder.dwell(refill_dwell_s, jitter_m=1.2, rng=rng)
+            builder.move_to(0.0, 0.0, transport_speed_kmh)  # walk back to refill
+            builder.dwell(refill_dwell_s, jitter_m=0.6, rng=rng)
             builder.move_to(x, y_from, transport_speed_kmh)
         elif worked == 0:
             builder.move_to(x, y_from, transport_speed_kmh)
         else:
-            builder.move_to(x, y_from, turn_speed_kmh)  # headland turn
+            builder.move_to(x, y_from, turn_speed_kmh)  # step across to the next lane
 
         builder.move_to(x, y_to, spray_speed_kmh)
         worked += 1
 
     builder.move_to(0.0, 0.0, transport_speed_kmh)
-    builder.dwell(120.0, jitter_m=1.0, rng=rng)
+    builder.dwell(90.0, jitter_m=0.6, rng=rng)
 
     xs = np.asarray(builder.xs)
     ys = np.asarray(builder.ys)
@@ -136,25 +137,25 @@ def synthetic_run(
         t=t,
         lat=lat,
         lon=lon,
-        accuracy=np.full(t.shape, 6.0),
+        accuracy=np.full(t.shape, 2.0),
         speed=None,
         name="Demo run",
         source="synthetic",
     )
-    base = BaseLocation(lat=base_lat, lon=base_lon, radius_m=40.0, min_dwell_s=120.0, name="Yard")
-    cfg = SprayerConfig(boom_width_m=boom_width_m, tank_capacity_l=1000.0)
+    base = BaseLocation(lat=base_lat, lon=base_lon, radius_m=8.0, min_dwell_s=60.0, name="Water point")
+    cfg = SprayerConfig(swath_width_m=swath_width_m, tank_capacity_l=18.0)
     return track, base, cfg
 
 
 def straight_pass(
-    length_m: float = 300.0,
-    speed_kmh: float = 8.0,
+    length_m: float = 25.0,
+    speed_kmh: float = 2.5,
     interval_s: float = 1.0,
     lat0: float = 40.0,
     lon0: float = 32.5,
     x_offset_m: float = 0.0,
 ) -> Track:
-    """A single straight pass. Its swath area is exactly length x boom width."""
+    """A single straight pass. Its swath area is exactly length x swath width."""
     plane = LocalPlane(lat0, lon0)
     speed = speed_kmh / 3.6
     n = int(round(length_m / speed / interval_s))

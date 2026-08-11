@@ -124,6 +124,7 @@ def segment_track(
     passes = _find_passes(track, state, seg_dist)
 
     _check_fix_density(state, seg_dist, seg_dt, cfg, warnings)
+    _check_accuracy(track, cfg, warnings)
 
     n_gap = int((state == PointState.GAP).sum())
     if n_gap:
@@ -156,31 +157,53 @@ def _check_fix_density(
     cfg: SprayerConfig,
     warnings: list[str],
 ) -> None:
-    """Warn when fixes are too far apart to place a swath honestly.
+    """Note when fixes are further apart than the spray band is wide.
 
-    Between two fixes the machine is assumed to have driven straight. That
-    holds while the spacing stays under about a boom width; past that the
-    swath is a guess, and any turn taken in between is invisible. This is the
-    usual failure mode with the Home Assistant Companion app, which only
-    reports every few minutes unless high-accuracy mode is on.
+    Between two fixes the walker is assumed to have gone straight. That holds
+    while the spacing stays under about a swath width; past that the band
+    between fixes is interpolated. The Companion app reports slowly by default,
+    so this is worth surfacing.
     """
     spraying = state == PointState.SPRAYING
     if spraying.sum() < 5:
         return
 
     spacing = float(np.median(seg_dist[spraying]))
-    if spacing <= cfg.boom_width_m:
+    if spacing <= cfg.swath_width_m:
         return
 
     interval = float(np.median(seg_dt[spraying]))
     speed_ms = spacing / interval if interval > 0 else 0.0
-    needed = cfg.boom_width_m / speed_ms if speed_ms > 0 else 0.0
+    needed = cfg.swath_width_m / speed_ms if speed_ms > 0 else 0.0
     warnings.append(
         f"Fixes are {spacing:.0f} m apart on average ({interval:.0f} s at "
-        f"{speed_ms * 3.6:.1f} km/h), which is wider than the {cfg.boom_width_m:g} m boom. "
-        f"Coverage between fixes is interpolated, so misses and overlap are "
-        f"unreliable. Log a position at least every {max(1, int(needed)):d} s "
-        f"- in the Companion app enable high accuracy mode for the run."
+        f"{speed_ms * 3.6:.1f} km/h), wider than the {cfg.swath_width_m:g} m spray band, "
+        f"so the coverage between fixes is filled in. For a sharper map log a "
+        f"position every {max(1, int(needed)):d} s or so - in the Companion app "
+        f"turn on high accuracy mode while you spray."
+    )
+
+
+def _check_accuracy(track: Track, cfg: SprayerConfig, warnings: list[str]) -> None:
+    """Note when GPS accuracy is coarse relative to the spray band.
+
+    A phone is typically accurate to several metres. When that is a good deal
+    wider than the band you treat, the totals (area, tanks, volume, rate) still
+    hold up, but the fine gap and overlap map is only a rough guide.
+    """
+    if track.accuracy is None:
+        return
+    acc = track.accuracy[np.isfinite(track.accuracy)]
+    if acc.size == 0:
+        return
+    median_acc = float(np.median(acc))
+    if median_acc <= 2.0 * cfg.swath_width_m:
+        return
+    warnings.append(
+        f"GPS accuracy is about {median_acc:.0f} m, wider than the "
+        f"{cfg.swath_width_m:g} m spray band. Area treated, tanks and volume are "
+        f"still sound; treat the gap and overlap map as a rough guide rather than "
+        f"metre-perfect."
     )
 
 

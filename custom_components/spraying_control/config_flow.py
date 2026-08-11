@@ -12,7 +12,7 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_BASE,
     CONF_BASE_DWELL,
-    CONF_BOOM_WIDTH,
+    CONF_SWATH_WIDTH,
     CONF_DAILY_TIME,
     CONF_MAX_ACCURACY,
     CONF_MAX_GAP,
@@ -22,7 +22,7 @@ from .const import (
     CONF_TRACKER,
     DEFAULT_BASE_DWELL,
     DEFAULT_BASE_RADIUS,
-    DEFAULT_BOOM_WIDTH,
+    DEFAULT_SWATH_WIDTH,
     DEFAULT_MAX_ACCURACY,
     DEFAULT_MAX_GAP,
     DEFAULT_MAX_SPEED,
@@ -55,30 +55,30 @@ def _schema(defaults: dict[str, Any], include_tracker: bool = True) -> vol.Schem
     fields.update(
         {
             vol.Required(
-                CONF_BOOM_WIDTH, default=defaults.get(CONF_BOOM_WIDTH, DEFAULT_BOOM_WIDTH)
-            ): _number(0.5, 60, 0.1, "m"),
+                CONF_SWATH_WIDTH, default=defaults.get(CONF_SWATH_WIDTH, DEFAULT_SWATH_WIDTH)
+            ): _number(0.2, 5, 0.1, "m"),
             vol.Required(
                 CONF_TANK_CAPACITY, default=defaults.get(CONF_TANK_CAPACITY, DEFAULT_TANK_CAPACITY)
-            ): _number(1, 20000, 10, "L"),
+            ): _number(1, 50, 0.5, "L"),
             vol.Optional(
                 CONF_BASE,
                 default=defaults.get(CONF_BASE, {"radius": DEFAULT_BASE_RADIUS}),
             ): selector.LocationSelector(selector.LocationSelectorConfig(radius=True)),
             vol.Required(
                 CONF_BASE_DWELL, default=defaults.get(CONF_BASE_DWELL, DEFAULT_BASE_DWELL)
-            ): _number(10, 7200, 10, "s"),
+            ): _number(10, 1800, 5, "s"),
             vol.Required(
                 CONF_MIN_SPEED, default=defaults.get(CONF_MIN_SPEED, DEFAULT_MIN_SPEED)
-            ): _number(0, 30, 0.1, "km/h"),
+            ): _number(0, 10, 0.1, "km/h"),
             vol.Required(
                 CONF_MAX_SPEED, default=defaults.get(CONF_MAX_SPEED, DEFAULT_MAX_SPEED)
-            ): _number(1, 80, 0.5, "km/h"),
+            ): _number(1, 15, 0.5, "km/h"),
             vol.Required(
                 CONF_MAX_GAP, default=defaults.get(CONF_MAX_GAP, DEFAULT_MAX_GAP)
-            ): _number(5, 3600, 5, "s"),
+            ): _number(5, 600, 5, "s"),
             vol.Required(
                 CONF_MAX_ACCURACY, default=defaults.get(CONF_MAX_ACCURACY, DEFAULT_MAX_ACCURACY)
-            ): _number(1, 500, 1, "m"),
+            ): _number(1, 100, 1, "m"),
             vol.Optional(CONF_DAILY_TIME, default=defaults.get(CONF_DAILY_TIME, "")): (
                 selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TIME))
             ),
