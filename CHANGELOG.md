@@ -13,6 +13,21 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-11
+
+Groundwork for HACS default-store submission.
+
+### Added
+- A brand icon (`custom_components/spraying_control/brand/icon.png`,
+  `icon@2x.png`) via the local-brands feature added in Home Assistant 2026.3 -
+  no separate PR to home-assistant/brands needed. Fixes the "icon not
+  available" placeholder shown in Settings.
+- `.github/workflows/validate.yml` is back. HACS default-store review requires
+  a public, passing GitHub Actions run (hassfest + the HACS action) as proof;
+  there is no submission path that skips it. `scripts/validate.sh` /
+  `make validate` remain the everyday local workflow - this exists
+  specifically for that requirement.
+
 ## [0.6.0] - 2026-08-11
 
 Run the real map without a Supervisor.
