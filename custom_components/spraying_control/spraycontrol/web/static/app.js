@@ -399,6 +399,11 @@ function startAlign(overlayId) {
 
   $('align-box').hidden = false;
   $('opacity').value = o.opacity ?? 1;
+  // Nothing to match against without a session, so do not offer it.
+  const haveTracks = (state.project.tracks || []).length > 0;
+  $('snap').hidden = !haveTracks;
+  $('snap-note').hidden = !haveTracks;
+  $('snap-lock-row').hidden = !haveTracks;
   refreshAlignReadouts();
   drawPhotos();
   map.fitBounds(L.latLngBounds([corners.topLeft, corners.topRight, corners.bottomLeft]), { padding: [60, 60] });
@@ -517,6 +522,77 @@ function handlePinClick(latlng) {
 
 $('pin-mode').addEventListener('click', () => {
   if (state.pinning) clearPins(); else startPinning();
+});
+
+/* ------------------------------------------------ snap to the track ----- */
+
+let trackPointCache = null;
+
+async function trackPoints() {
+  if (trackPointCache && trackPointCache.id === state.project.id) return trackPointCache.points;
+  const data = await api(`api/projects/${state.project.id}/trackpoints`);
+  trackPointCache = { id: state.project.id, points: data.points || [] };
+  return trackPointCache.points;
+}
+
+$('snap').addEventListener('click', async () => {
+  const a = state.aligning;
+  if (!a) return;
+  const btn = $('snap');
+  btn.disabled = true;
+  hint('Matching your route to the picture…');
+
+  try {
+    const points = await trackPoints();
+    if (points.length < 20) {
+      hint('Not enough track to match against — add a session first', 4000);
+      return;
+    }
+
+    // The photo is already on the map; read its pixels off a canvas.
+    const img = a.layer._image;
+    if (!img || !img.naturalWidth) {
+      hint('The photo is still loading — try again in a moment', 3000);
+      return;
+    }
+
+    const map_ = Snap.featureMap(img);
+    const here = describeCorners(a.corners);
+    const per = metresPerDegree(here.centre[0]);
+
+    // Sweep for the right neighbourhood first, anchored on the route's own size
+    // - a photo dropped on the map is sized to the window, which can be an order
+    // of magnitude out. Then tighten up from whichever start scores better.
+    const lock = $('snap-lock').checked ? here.widthM : 0;
+    const coarse = Snap.locate(map_, points, per, { lockWidth: lock });
+    const start =
+      coarse && coarse.score > Snap.score(
+        map_, Float64Array.from(points.flat()), here.centre, here.widthM, here.rotDeg, per,
+      )
+        ? coarse
+        : here;
+    const best = Snap.refine(map_, points, start, per, { lockWidth: lock });
+
+    if (!(best.gain > 0.01) && start === here) {
+      hint('No better fit found — it already sits as well as it can', 5000);
+      return;
+    }
+
+    a.corners = cornersFrom(best.centre, best.widthM, best.widthM * a.aspect, best.rotDeg);
+    a.layer.setCorners(a.corners);
+    moveCornerHandles();
+    if (a.handles.move) a.handles.move.setLatLng(best.centre);
+    refreshAlignReadouts();
+    hint(
+      `Snapped: ${best.widthM.toFixed(0)} m wide, turned ${best.rotDeg.toFixed(1)}°. ` +
+      'Check it, then Save.', 7000,
+    );
+  } catch (e) {
+    hint(null);
+    showError(`Could not snap: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 /* Put the corner markers back where the corners now are. */

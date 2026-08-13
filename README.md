@@ -50,6 +50,10 @@ a drone, a mast or a window upstairs is far sharper, so you can use your own:
    drag the **white centre handle** to move it, the **rotate slider** to turn
    it, and type the real **width in metres**. The coloured corners fine-tune.
    **Save position** keeps it.
+4. If you have walked the plot already, **Snap to my track** nudges the photo so
+   your route lands on the paths and edges in it. The angle comes back
+   reliably; scale is ambiguous where rows repeat, so if you know the real width
+   type it in and tick **Keep the width**.
 
 The photo sits under the coverage, and a slider fades the coverage back so you
 can read the ground through it.
