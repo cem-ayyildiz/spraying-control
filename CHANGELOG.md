@@ -13,6 +13,23 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-13
+
+Lining a photo up no longer means wrestling three corners.
+
+### Added
+- **Move**: a white centre handle that carries the whole picture.
+- **Rotate**: a slider, a live degree readout, and 1 degree and 90 degree nudge
+  buttons. Turning it keeps the picture square to itself rather than shearing it.
+- **Width in metres**: type the real ground width and the height follows the
+  photo's own proportions.
+- **Reset shape**, to undo a fiddle and start again from where it was.
+
+The three coloured corners remain for pinning onto features exactly, and now
+update the readouts as you drag them. The browser's placement maths uses the
+same WGS84 radii as the analysis, so a width means the same thing on both sides
+(they agree to under a millimetre).
+
 ## [0.8.2] - 2026-08-13
 
 ### Fixed

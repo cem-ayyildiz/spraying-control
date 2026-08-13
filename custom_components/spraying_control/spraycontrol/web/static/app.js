@@ -247,6 +247,70 @@ function cornersOf(o) {
   return { topLeft: pl.top_left, topRight: pl.top_right, bottomLeft: pl.bottom_left };
 }
 
+/* Placing a picture: centre, ground width, and how far it is turned.
+ *
+ * Three corners are what gets stored - they can express any affine placement -
+ * but dragging them one at a time is a poor way to move or rotate something.
+ * These two convert between the corners and the handful of numbers a person
+ * actually thinks in. Over a garden a flat metres-per-degree conversion is
+ * accurate to well under the width of the spray band.
+ */
+/* Metres per degree on the WGS84 ellipsoid - the same radii the Python side
+ * uses, so "180 m wide" means the same thing in both. A flat constant is out by
+ * a couple of parts in a thousand, which is a visible third of a metre across a
+ * large photo. */
+const WGS84_A = 6378137.0;
+const WGS84_E2 = 0.00669437999014;
+
+function metresPerDegree(lat) {
+  const phi = (lat * Math.PI) / 180;
+  const s = Math.sin(phi);
+  const w = 1 - WGS84_E2 * s * s;
+  const meridional = (WGS84_A * (1 - WGS84_E2)) / Math.pow(w, 1.5);
+  const primeVertical = WGS84_A / Math.sqrt(w);
+  return {
+    lat: (meridional * Math.PI) / 180,
+    lon: (primeVertical * Math.cos(phi) * Math.PI) / 180,
+  };
+}
+
+function cornersFrom(centre, widthM, heightM, rotDeg) {
+  const [lat, lon] = centre;
+  const per = metresPerDegree(lat);
+  const M_PER_DEG_LAT = per.lat;
+  const mLon = per.lon || 1e-9;
+  const t = (rotDeg * Math.PI) / 180;
+  const cos = Math.cos(t);
+  const sin = Math.sin(t);
+  const hw = widthM / 2;
+  const hh = heightM / 2;
+  // dx east, dy north before turning; rotate clockwise from north-up.
+  const corner = (dx, dy) => [
+    lat + (-dx * sin + dy * cos) / M_PER_DEG_LAT,
+    lon + (dx * cos + dy * sin) / mLon,
+  ];
+  return { topLeft: corner(-hw, hh), topRight: corner(hw, hh), bottomLeft: corner(-hw, -hh) };
+}
+
+function describeCorners(c) {
+  const lat = (c.topLeft[0] + c.topRight[0] + c.bottomLeft[0]) / 3;
+  const per = metresPerDegree(lat);
+  const mLon = per.lon || 1e-9;
+  const toXY = ([la, lo]) => [(lo - c.topLeft[1]) * mLon, (la - c.topLeft[0]) * per.lat];
+  const [trx, try_] = toXY(c.topRight);
+  const [blx, bly] = toXY(c.bottomLeft);
+  const widthM = Math.hypot(trx, try_);
+  const heightM = Math.hypot(blx, bly);
+  // Bearing of the top edge, less the quarter turn a north-up image already has.
+  let rot = (Math.atan2(trx, try_) * 180) / Math.PI - 90;
+  rot = ((rot + 540) % 360) - 180;
+  const centre = [
+    (c.topLeft[0] + c.topRight[0] + c.bottomLeft[0] + (c.topRight[0] + c.bottomLeft[0] - c.topLeft[0])) / 4,
+    (c.topLeft[1] + c.topRight[1] + c.bottomLeft[1] + (c.topRight[1] + c.bottomLeft[1] - c.topLeft[1])) / 4,
+  ];
+  return { centre, widthM, heightM, rotDeg: rot };
+}
+
 function drawPhotos() {
   layers.photos.clearLayers();
   (state.project?.overlays || []).forEach((o) => {
@@ -273,29 +337,112 @@ function startAlign(overlayId) {
   const corners = cornersOf(o);
   const layer = L.rotatedOverlay(o.url, corners, { opacity: o.opacity ?? 1, pane: 'photoPane' }).addTo(map);
   const handles = {};
+  const aspect = o.height_px / o.width_px;
 
-  const keys = [['topLeft', ''], ['topRight', 'tr'], ['bottomLeft', 'bl']];
-  keys.forEach(([key, cls]) => {
+  state.aligning = { id: overlayId, corners: { ...corners }, layer, handles, aspect, original: { ...corners } };
+
+  // Move: one handle in the middle that carries the whole picture.
+  const centre = describeCorners(corners).centre;
+  const mover = L.marker(centre, {
+    draggable: true,
+    icon: L.divIcon({ className: 'corner-handle move', iconSize: [22, 22] }),
+    zIndexOffset: 1100,
+  }).addTo(layers.handles);
+  mover.on('drag', () => {
+    const a = state.aligning;
+    const from = describeCorners(a.corners).centre;
+    const to = mover.getLatLng();
+    const dLat = to.lat - from[0];
+    const dLon = to.lng - from[1];
+    for (const key of ['topLeft', 'topRight', 'bottomLeft']) {
+      a.corners[key] = [a.corners[key][0] + dLat, a.corners[key][1] + dLon];
+    }
+    a.layer.setCorners(a.corners);
+    moveCornerHandles();
+  });
+  mover.on('dragend', refreshAlignReadouts);
+  handles.move = mover;
+
+  // The corners stay, for pinning the picture onto features exactly.
+  [['topLeft', ''], ['topRight', 'tr'], ['bottomLeft', 'bl']].forEach(([key, cls]) => {
     const marker = L.marker(corners[key], {
       draggable: true,
       icon: L.divIcon({ className: `corner-handle ${cls}`, iconSize: [18, 18] }),
       zIndexOffset: 1000,
     }).addTo(layers.handles);
     marker.on('drag', () => {
-      const c = state.aligning.corners;
-      c[key] = [marker.getLatLng().lat, marker.getLatLng().lng];
-      layer.setCorners(c);
+      const a = state.aligning;
+      a.corners[key] = [marker.getLatLng().lat, marker.getLatLng().lng];
+      a.layer.setCorners(a.corners);
+      if (a.handles.move) a.handles.move.setLatLng(describeCorners(a.corners).centre);
     });
+    marker.on('dragend', refreshAlignReadouts);
     handles[key] = marker;
   });
 
-  state.aligning = { id: overlayId, corners: { ...corners }, layer, handles };
   $('align-box').hidden = false;
   $('opacity').value = o.opacity ?? 1;
+  refreshAlignReadouts();
   drawPhotos();
   map.fitBounds(L.latLngBounds([corners.topLeft, corners.topRight, corners.bottomLeft]), { padding: [60, 60] });
-  hint('Drag the three handles onto features you recognise, then Save position');
+  hint('Drag the white handle to move it, the slider to turn it');
 }
+
+/* Put the corner markers back where the corners now are. */
+function moveCornerHandles() {
+  const a = state.aligning;
+  if (!a) return;
+  ['topLeft', 'topRight', 'bottomLeft'].forEach((key) => {
+    if (a.handles[key]) a.handles[key].setLatLng(a.corners[key]);
+  });
+}
+
+/* Show the current turn and width in the controls, without echoing back. */
+function refreshAlignReadouts() {
+  const a = state.aligning;
+  if (!a) return;
+  const d = describeCorners(a.corners);
+  $('rotate').value = d.rotDeg.toFixed(1);
+  $('rot-read').textContent = `${d.rotDeg.toFixed(1)}°`;
+  $('ov-width').value = d.widthM.toFixed(1);
+}
+
+/* Rebuild the corners from centre + width + turn, keeping the picture square
+   to itself - which is what you want when nudging it into place. */
+function applyAlignControls() {
+  const a = state.aligning;
+  if (!a) return;
+  const d = describeCorners(a.corners);
+  const widthM = Math.max(1, parseFloat($('ov-width').value) || d.widthM);
+  const rotDeg = parseFloat($('rotate').value);
+  a.corners = cornersFrom(d.centre, widthM, widthM * a.aspect, rotDeg);
+  a.layer.setCorners(a.corners);
+  moveCornerHandles();
+  if (a.handles.move) a.handles.move.setLatLng(d.centre);
+  $('rot-read').textContent = `${rotDeg.toFixed(1)}°`;
+}
+
+$('rotate').addEventListener('input', applyAlignControls);
+$('ov-width').addEventListener('input', applyAlignControls);
+
+document.querySelectorAll('[data-nudge]').forEach((btn) =>
+  btn.addEventListener('click', () => {
+    if (!state.aligning) return;
+    let next = parseFloat($('rotate').value) + parseFloat(btn.dataset.nudge);
+    next = ((next + 540) % 360) - 180;   // keep it inside the slider
+    $('rotate').value = next;
+    applyAlignControls();
+  }));
+
+$('align-reset').addEventListener('click', () => {
+  const a = state.aligning;
+  if (!a) return;
+  a.corners = { ...a.original };
+  a.layer.setCorners(a.corners);
+  moveCornerHandles();
+  if (a.handles.move) a.handles.move.setLatLng(describeCorners(a.corners).centre);
+  refreshAlignReadouts();
+});
 
 function cancelAlign() {
   if (!state.aligning) return;
