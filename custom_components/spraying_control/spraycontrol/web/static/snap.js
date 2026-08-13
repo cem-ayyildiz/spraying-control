@@ -69,8 +69,13 @@ const Snap = (() => {
   }
 
   /* How well the track sits on the picture's features, for one placement.
-   * Points that fall off the photo score nothing, which keeps the search from
-   * drifting the image away entirely. */
+   *
+   * Averaged over the *whole* route, not just the part that happens to land on
+   * the photo. Dividing by the points inside instead rewards exactly the wrong
+   * thing: slide the picture until only a handful of lucky points remain on it,
+   * all of them on strong edges, and the average goes up. That degenerate
+   * answer beat the true alignment every time until this was averaged properly.
+   */
   function score(map, pts, centre, widthM, rotDeg, per) {
     const t = (rotDeg * Math.PI) / 180;
     const cos = Math.cos(t);
@@ -93,8 +98,9 @@ const Snap = (() => {
       inside++;
       total += map.data[(v | 0) * map.w + (u | 0)];
     }
-    if (inside < pts.length * 0.35) return -1;   // most of the route fell off
-    return total / inside;
+    const n = pts.length / 2;
+    if (inside < n * 0.8) return -1;   // the route has to sit on the picture
+    return total / n;
   }
 
   /* Tighten up a placement the user has already made roughly.
@@ -148,61 +154,5 @@ const Snap = (() => {
     return best;
   }
 
-  /* Where the walked route sits, and how big it is. */
-  function trackExtent(points, per) {
-    let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-    for (const [la, lo] of points) {
-      if (la < minLat) minLat = la;
-      if (la > maxLat) maxLat = la;
-      if (lo < minLon) minLon = lo;
-      if (lo > maxLon) maxLon = lo;
-    }
-    return {
-      centre: [(minLat + maxLat) / 2, (minLon + maxLon) / 2],
-      spanM: Math.max((maxLat - minLat) * per.lat, (maxLon - minLon) * per.lon),
-    };
-  }
-
-  /* Find the placement from scratch, anchored on the route itself.
-   *
-   * Scale is the parameter most likely to be wildly wrong, because a photo
-   * dropped on the map is sized to the window rather than to the ground. The
-   * route fixes that: whatever was walked has to fit inside the picture, and
-   * usually fills a good part of it - so the photo is somewhere between about
-   * the size of the route and three times it. Sweeping that range against every
-   * angle finds the neighbourhood; refine() then does the last few metres.
-   */
-  function locate(map, points, per, opts = {}) {
-    const extent = trackExtent(points, per);
-    const span = Math.max(extent.spanM, 1);
-    // A known width removes the one genuinely ambiguous parameter: rows repeat,
-    // so several scales put the route on *a* set of lines equally well.
-    const widths = opts.lockWidth
-      ? [opts.lockWidth]
-      : (opts.widthFactors || [0.9, 1.1, 1.35, 1.6, 1.9, 2.3, 2.8, 3.4]).map((f) => span * f);
-    const rotStep = opts.rotStep || 6;
-
-    const pts = new Float64Array(points.length * 2);
-    points.forEach((p, i) => { pts[i * 2] = p[0]; pts[i * 2 + 1] = p[1]; });
-
-    let best = null;
-    for (const widthM of widths) {
-      const reach = widthM * 0.25;
-      for (let rot = -180; rot < 180; rot += rotStep) {
-        for (let i = -2; i <= 2; i++) {
-          for (let j = -2; j <= 2; j++) {
-            const centre = [
-              extent.centre[0] + (i / 2) * (reach / per.lat),
-              extent.centre[1] + (j / 2) * (reach / per.lon),
-            ];
-            const s = score(map, pts, centre, widthM, rot, per);
-            if (!best || s > best.score) best = { centre, widthM, rotDeg: rot, score: s };
-          }
-        }
-      }
-    }
-    return best;
-  }
-
-  return { featureMap, refine, score, locate, trackExtent };
+  return { featureMap, refine, score };
 })();
