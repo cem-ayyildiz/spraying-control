@@ -1,6 +1,6 @@
 [project]
 name = "spraycontrol"
-version = "0.9.0"
+version = "0.9.1"
 description = "Analyse sprayer GPS tracks: coverage, overlap, gaps, tank refills and application rate."
 readme = "README.md"
 authors = [

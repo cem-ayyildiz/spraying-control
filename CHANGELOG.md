@@ -13,6 +13,20 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-08-13
+
+### Fixed
+- **An aerial photo appeared to vanish once a session was added.** It was never
+  gone - a photo placed before any track is centred on whatever you happen to be
+  looking at, and analysing then jumps the map to where you actually walked,
+  leaving the photo outside the view. Now:
+  - the map takes in the photo as well as the coverage when the two overlap;
+  - when they do not, a note says how far away it is, with **Move it onto the
+    plot** (keeping the size and angle you set) and **Show me it**;
+  - every photo has a locate button, so it can always be found;
+  - the empty-state hint says to add a session first, since a photo added
+    afterwards lands on it by itself.
+
 ## [0.9.0] - 2026-08-13
 
 Lining a photo up no longer means wrestling three corners.
