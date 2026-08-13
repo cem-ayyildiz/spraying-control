@@ -204,12 +204,20 @@ function renderOverlays() {
   const ul = $('overlays');
   ul.innerHTML = '';
   $('photo-hint').hidden = p.overlays.length > 0;
+  if (!p.overlays.length) {
+    // Tell them which way round to work: a photo added after the tracks lands
+    // on them by itself, which saves dragging it across the county.
+    $('photo-hint').textContent = p.tracks.length
+      ? 'Centred on your sessions, then drag the corners to line it up.'
+      : 'Add a session first and the photo will land on it. Otherwise it is centred on your view.';
+  }
   p.overlays.forEach((o) => {
     const li = document.createElement('li');
     li.className = o.enabled ? '' : 'off';
     li.innerHTML = `
       <input type="checkbox" ${o.enabled ? 'checked' : ''} data-oid="${o.id}" aria-label="Show ${o.name}">
       <div class="meta"><b>${escapeHtml(o.name)}</b><span>${o.width_px}×${o.height_px} · ${escapeHtml(o.source || '')}</span></div>
+      <button type="button" class="row-btn" data-find="${o.id}" title="Show me where it is">&#9906;</button>
       <button type="button" class="row-btn" data-align="${o.id}" title="Line up">&#9635;</button>
       <button type="button" class="row-btn danger" data-delo="${o.id}" title="Remove">&times;</button>`;
     ul.appendChild(li);
@@ -226,6 +234,14 @@ function renderOverlays() {
       drawPhotos();
     });
   });
+  ul.querySelectorAll('[data-find]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const o = p.overlays.find((x) => x.id === b.dataset.find);
+      if (!o) return;
+      const c = cornersOf(o);
+      map.fitBounds(L.latLngBounds([c.topLeft, c.topRight, c.bottomLeft]), { padding: [60, 60] });
+      hint(`Showing ${o.name}`, 2500);
+    }));
   ul.querySelectorAll('[data-align]').forEach((b) =>
     b.addEventListener('click', () => startAlign(b.dataset.align)));
   ul.querySelectorAll('[data-delo]').forEach((b) =>
@@ -917,7 +933,70 @@ function paint(data) {
     }).addTo(layers.gaps);
   });
 
-  map.fitBounds(data.bounds, { padding: [30, 30] });
+  frameResult(data);
+}
+
+/* Frame the coverage, taking in any photo that actually covers it. A photo
+ * placed before the tracks existed can be a long way off, and silently zooming
+ * to the plot leaves it off-screen looking lost - so say so instead. */
+function frameResult(data) {
+  const plot = L.latLngBounds(data.bounds);
+  const shown = (state.project?.overlays || []).filter((o) => o.enabled);
+
+  const overlapping = shown.filter((o) => {
+    const c = cornersOf(o);
+    return plot.intersects(L.latLngBounds([c.topLeft, c.topRight, c.bottomLeft]));
+  });
+
+  const view = L.latLngBounds(data.bounds);
+  overlapping.forEach((o) => {
+    const c = cornersOf(o);
+    view.extend(L.latLngBounds([c.topLeft, c.topRight, c.bottomLeft]));
+  });
+  map.fitBounds(view, { padding: [30, 30] });
+
+  const strays = shown.filter((o) => !overlapping.includes(o));
+  const box = $('photo-away');
+  if (!strays.length) { box.hidden = true; return; }
+
+  const o = strays[0];
+  const c = cornersOf(o);
+  const away = map.distance(L.latLng(c.topLeft[0], c.topLeft[1]), plot.getCenter());
+  const far = away > 1000 ? `${(away / 1000).toFixed(1)} km` : `${Math.round(away)} m`;
+  box.innerHTML =
+    `<b>${escapeHtml(o.name)}</b> is ${far} from this session, so it is off the map. ` +
+    'It was placed before the tracks existed. ' +
+    '<button type="button" id="bring-photo" class="ghost small" style="margin-top:6px">Move it onto the plot</button> ' +
+    '<button type="button" id="show-photo" class="ghost small" style="margin-top:6px">Show me it</button>';
+  box.hidden = false;
+
+  $('show-photo').addEventListener('click', () =>
+    map.fitBounds(L.latLngBounds([c.topLeft, c.topRight, c.bottomLeft]), { padding: [60, 60] }));
+
+  $('bring-photo').addEventListener('click', async () => {
+    // Keep the size and the angle it was set to; only shift it across.
+    const d = describeCorners(cornersOf(o));
+    const target = plot.getCenter();
+    const moved = cornersFrom([target.lat, target.lng], d.widthM, d.heightM, d.rotDeg);
+    try {
+      state.project = await api(`api/projects/${state.project.id}/overlays/${o.id}`, {
+        method: 'PATCH',
+        form: formOf({
+          placement: JSON.stringify({
+            top_left: moved.topLeft, top_right: moved.topRight, bottom_left: moved.bottomLeft,
+          }),
+        }),
+      });
+      renderOverlays();
+      drawPhotos();
+      box.hidden = true;
+      map.fitBounds(plot, { padding: [30, 30] });
+      hint('Photo moved onto the plot — line it up from here', 4000);
+      startAlign(o.id);
+    } catch (e) {
+      showError(e.message);
+    }
+  });
 }
 
 /* ------------------------------------------------------------ push ----- */
