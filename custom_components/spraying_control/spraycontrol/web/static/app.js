@@ -26,8 +26,27 @@ const satellite = L.tileLayer(
 const streets = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 22, maxNativeZoom: 19, attribution: '&copy; OpenStreetMap',
 });
+// A blank basemap, for working offline or when the tile server has nothing at
+// garden zoom. Your own aerial photo is the backdrop then, which is the point.
+const blank = L.tileLayer('', { attribution: 'No basemap' });
+
 satellite.addTo(map);
-L.control.layers({ Satellite: satellite, Streets: streets }, {}, { position: 'topright' }).addTo(map);
+L.control.layers(
+  { Satellite: satellite, Streets: streets, 'None (offline)': blank },
+  {}, { position: 'topright' },
+).addTo(map);
+
+// Fall back to the blank basemap when tiles cannot be fetched at all, so the
+// map does not sit there looking broken.
+let tileFailures = 0;
+[satellite, streets].forEach((layer) =>
+  layer.on('tileerror', () => {
+    if (++tileFailures === 8 && map.hasLayer(layer)) {
+      map.removeLayer(layer);
+      blank.addTo(map);
+      hint('No map tiles — working offline. Your aerial photo still shows.', 6000);
+    }
+  }));
 
 // Aerial photos get their own pane between the basemap and the overlays, so
 // they always sit under the coverage and the track rather than hiding them.

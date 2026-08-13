@@ -206,6 +206,51 @@ class Placement:
             self.top_right[1] + self.bottom_left[1] - self.top_left[1],
         )
 
+    def pixel_to_latlon(self, px: float, py: float, width_px: int, height_px: int) -> LatLon:
+        """Where a pixel of the image sits on the ground.
+
+        ``(0, 0)`` is the top-left pixel and ``(width, height)`` the bottom-right
+        corner. The three corners define an affine map, so this is just the
+        top-left corner plus however far along each edge the pixel lies.
+        """
+        if width_px <= 0 or height_px <= 0:
+            raise ImageError("image has no size")
+        u = px / width_px
+        v = py / height_px
+        lat = (
+            self.top_left[0]
+            + u * (self.top_right[0] - self.top_left[0])
+            + v * (self.bottom_left[0] - self.top_left[0])
+        )
+        lon = (
+            self.top_left[1]
+            + u * (self.top_right[1] - self.top_left[1])
+            + v * (self.bottom_left[1] - self.top_left[1])
+        )
+        return (lat, lon)
+
+    def latlon_to_pixel(self, lat: float, lon: float, width_px: int, height_px: int) -> tuple[float, float]:
+        """Which pixel of the image covers a point on the ground.
+
+        The inverse of :meth:`pixel_to_latlon`. Values outside 0..width /
+        0..height mean the point falls outside the picture.
+        """
+        if width_px <= 0 or height_px <= 0:
+            raise ImageError("image has no size")
+        # Solve the 2x2 system built from the two edge vectors.
+        e1_lat = self.top_right[0] - self.top_left[0]
+        e1_lon = self.top_right[1] - self.top_left[1]
+        e2_lat = self.bottom_left[0] - self.top_left[0]
+        e2_lon = self.bottom_left[1] - self.top_left[1]
+        det = e1_lon * e2_lat - e1_lat * e2_lon
+        if abs(det) < 1e-18:
+            raise ImageError("the placement is degenerate; re-align the photo")
+        d_lat = lat - self.top_left[0]
+        d_lon = lon - self.top_left[1]
+        u = (d_lon * e2_lat - d_lat * e2_lon) / det
+        v = (d_lat * e1_lon - d_lon * e1_lat) / det
+        return (u * width_px, v * height_px)
+
     def ground_size_m(self) -> tuple[float, float]:
         """Width and height on the ground, in metres."""
         plane = LocalPlane(self.top_left[0], self.top_left[1])

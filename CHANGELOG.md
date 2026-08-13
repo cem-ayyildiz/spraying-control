@@ -13,6 +13,20 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-08-13
+
+Works with no internet, and the picture's own coordinates are addressable.
+
+### Added
+- **"None (offline)" basemap**, and an automatic fall back to it when tiles
+  cannot be fetched. Everything that matters still works without a connection:
+  your aerial photo is the backdrop, the coverage draws on top and every figure
+  is computed locally.
+- `Placement.pixel_to_latlon()` and `latlon_to_pixel()`: convert between a
+  pixel of your aerial photo and a point on the ground, in both directions.
+  Useful for asking "where is this bit of the picture?" or "did I spray the
+  spot shown here?".
+
 ## [0.8.0] - 2026-08-11
 
 Your own aerial photo as the backdrop, several sessions in one picture, and a

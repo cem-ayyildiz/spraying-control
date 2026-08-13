@@ -130,6 +130,31 @@ class TestImagery:
         assert lat == pytest.approx(placement.bottom_left[0], abs=1e-9)
         assert lon == pytest.approx(placement.top_right[1], abs=1e-9)
 
+    @pytest.mark.parametrize("angle", [0.0, 25.0, -70.0])
+    def test_pixel_and_gps_are_inverses(self, angle):
+        """Every pixel maps to a point on the ground, and back again."""
+        width, height = 900, 600
+        placement = place_centred((38.3005, 32.8985), width, height, 60.0, rotation_deg=angle)
+        for px, py in [(0, 0), (width, 0), (0, height), (width, height), (123, 456)]:
+            lat, lon = placement.pixel_to_latlon(px, py, width, height)
+            back = placement.latlon_to_pixel(lat, lon, width, height)
+            assert back == pytest.approx((px, py), abs=1e-6)
+
+    def test_corners_land_on_the_corners(self):
+        width, height = 800, 400
+        placement = place_centred((38.3, 32.9), width, height, 50.0, rotation_deg=15.0)
+        assert placement.pixel_to_latlon(0, 0, width, height) == pytest.approx(placement.top_left)
+        assert placement.pixel_to_latlon(width, 0, width, height) == pytest.approx(placement.top_right)
+        assert placement.pixel_to_latlon(0, height, width, height) == pytest.approx(placement.bottom_left)
+        assert placement.pixel_to_latlon(width, height, width, height) == pytest.approx(placement.bottom_right)
+
+    def test_a_point_outside_the_photo_reads_outside(self):
+        width, height = 600, 600
+        placement = place_centred((38.3, 32.9), width, height, 40.0)
+        # Roughly a kilometre away, so far off the picture.
+        px, py = placement.latlon_to_pixel(38.31, 32.91, width, height)
+        assert not (0 <= px <= width and 0 <= py <= height)
+
     def test_world_file(self):
         text = "0.0000002\n0.0\n0.0\n-0.0000002\n32.9\n38.3"
         placement = placement_from_world_file(text, 1000, 500)
