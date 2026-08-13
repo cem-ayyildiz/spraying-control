@@ -227,6 +227,37 @@ class TestProjectStore:
         centre = store.tracks_centre(project)
         assert placement.top_left[0] == pytest.approx(centre[0], abs=0.001)
 
+    def test_first_photo_in_an_empty_garden(self, tmp_path):
+        """A photo with no GPS, added before any track, lands on the view the
+        user is looking at rather than being refused."""
+        store = ProjectStore(tmp_path)
+        project = store.create()
+        assert store.tracks_centre(project) is None  # nothing to centre on
+
+        image = write_png(np.zeros((600, 900, 4), dtype=np.uint8))
+        record = store.add_overlay(
+            project,
+            image,
+            "drone.png",
+            fallback_centre=(38.4127, 27.1384),
+            default_width_m=180.0,
+            centre_label="centred on your view",
+        )
+        assert record.source == "centred on your view"
+
+        placement = record.as_placement()
+        width, height = placement.ground_size_m()
+        assert (width, height) == pytest.approx((180.0, 120.0), rel=0.01)
+        centre = placement.pixel_to_latlon(450, 300, 900, 600)
+        assert centre == pytest.approx((38.4127, 27.1384), abs=1e-6)
+
+    def test_a_photo_with_nowhere_to_go_says_so(self, tmp_path):
+        store = ProjectStore(tmp_path)
+        project = store.create()
+        image = write_png(np.zeros((10, 10, 4), dtype=np.uint8))
+        with pytest.raises(ImageError, match="no GPS"):
+            store.add_overlay(project, image, "drone.png", fallback_centre=None)
+
     def test_removing_a_session_deletes_its_file(self, tmp_path):
         store = ProjectStore(tmp_path)
         project = store.create()

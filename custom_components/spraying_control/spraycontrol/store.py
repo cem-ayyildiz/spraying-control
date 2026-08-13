@@ -258,6 +258,7 @@ class ProjectStore:
         world_file: str | None = None,
         fallback_centre: tuple[float, float] | None = None,
         default_width_m: float = 60.0,
+        centre_label: str = "centred on your tracks",
     ) -> OverlayRecord:
         """Store an aerial picture with a first guess at where it belongs."""
         width_px, height_px = image_size(data)
@@ -266,6 +267,7 @@ class ProjectStore:
             fallback_centre=fallback_centre,
             default_width_m=default_width_m,
             world_file=world_file,
+            centre_label=centre_label,
         )
 
         record = OverlayRecord(

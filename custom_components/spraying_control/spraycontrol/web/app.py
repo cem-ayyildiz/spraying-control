@@ -87,6 +87,16 @@ def _iso(epoch: float) -> str:
     return datetime.fromtimestamp(epoch, timezone.utc).isoformat()
 
 
+def _f(value: str | None, default: float) -> float:
+    """A number from a form field, falling back when it is absent or rubbish."""
+    if value is None or value == "":
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 def _project_json(project: Project) -> dict:
     return {
         "id": project.id,
@@ -339,6 +349,9 @@ async def api_add_overlay(
     file: UploadFile,
     world_file: UploadFile | None = None,
     name: str = Form(""),
+    centre_lat: str = Form(None),
+    centre_lon: str = Form(None),
+    width_m: str = Form(None),
 ):
     project = _project(project_id)
     data = await file.read()
@@ -349,6 +362,17 @@ async def api_add_overlay(
     if world_file is not None:
         world_text = (await world_file.read()).decode("utf-8", "replace")
 
+    # Prefer the tracks, then whatever the user is looking at. Without the
+    # second fallback a first photo in an empty garden has nowhere to go.
+    centre = store().tracks_centre(project)
+    centre_label = "centred on your tracks"
+    if centre is None and centre_lat and centre_lon:
+        try:
+            centre = (float(centre_lat), float(centre_lon))
+            centre_label = "centred on your view"
+        except ValueError:
+            centre = None
+
     try:
         record = store().add_overlay(
             project,
@@ -356,7 +380,9 @@ async def api_add_overlay(
             file.filename or "aerial.png",
             name=name,
             world_file=world_text,
-            fallback_centre=store().tracks_centre(project),
+            fallback_centre=centre,
+            default_width_m=_f(width_m, 60.0),
+            centre_label=centre_label,
         )
     except ImageError as err:
         raise HTTPException(400, str(err))

@@ -53,11 +53,17 @@
       <div id="error" class="error" hidden></div>
     </section>
 
-    <section id="photos-section" hidden>
+    <section id="photos-section">
       <div class="section-head">
         <h2>Aerial photos</h2>
+        <span class="hint-text">sharper than satellite</span>
       </div>
       <ul id="overlays" class="list"></ul>
+      <button type="button" id="add-photo" class="ghost small" style="width:100%">
+        Add an aerial photo&hellip;
+      </button>
+      <p class="note" id="photo-hint">Centred on where you are looking, then drag
+      the corners to line it up.</p>
       <div id="align-box" hidden>
         <p class="note">Drag the three handles onto matching ground features,
         then save. Corners: top-left, top-right, bottom-left.</p>
