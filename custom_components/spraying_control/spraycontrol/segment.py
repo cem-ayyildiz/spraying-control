@@ -81,7 +81,13 @@ def segment_track(
     track: Track,
     cfg: SprayerConfig,
     base: BaseLocation | None = None,
+    plane: LocalPlane | None = None,
 ) -> SegmentedTrack:
+    """Classify one track's motion.
+
+    ``plane`` lets several tracks share one projection, which is what makes a
+    combined coverage grid across sessions possible.
+    """
     warnings: list[str] = []
     n_raw = len(track)
     if n_raw < 2:
@@ -93,7 +99,8 @@ def segment_track(
     if n < 2:
         raise ValueError("track has fewer than 2 usable points after filtering")
 
-    plane = LocalPlane.anchored_on(track.lat, track.lon)
+    if plane is None:
+        plane = LocalPlane.anchored_on(track.lat, track.lon)
     x, y = plane.forward(track.lat, track.lon)
 
     seg_dist = np.hypot(np.diff(x), np.diff(y))

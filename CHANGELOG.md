@@ -13,6 +13,38 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-11
+
+Your own aerial photo as the backdrop, several sessions in one picture, and a
+garden that remembers itself.
+
+### Added
+- **Projects.** A garden is now kept on disk: its settings, its refill point,
+  its plot boundary, every session file and every photo. Set it up once and each
+  new session is one drag away. Stored under `/data/projects` in the add-on and
+  the standalone image, so it survives restarts and rebuilds.
+- **Aerial photos.** Drop in a picture from a drone or a mast and it becomes the
+  map backdrop, which is the only way to see garden detail - satellite tiles top
+  out around 0.3 m per pixel and often have nothing at all at that zoom. The
+  first guess at where it belongs comes from an ESRI world file if you have one,
+  otherwise the camera's own GPS, otherwise the middle of your tracks. Then drag
+  three corners to line it up: position, scale and rotation all follow.
+- **Several sessions at once.** Tick any set of sessions and analyse them
+  together. Ground covered again in a later session counts as overlap, and each
+  session reports how much was new versus already done.
+- **Drag and drop anywhere**, several files at a time, tracks and photos mixed.
+- **A coverage opacity slider**, to fade the overlay back and read the ground
+  underneath.
+- `spraycontrol analyze` now takes several files: `analyze a.gpx b.gpx`.
+
+### Changed
+- `analyze()` accepts a list of tracks as well as a single one. One projection
+  and one grid are shared across them, which is what makes cross-session overlap
+  measurable.
+- The web interface is rebuilt around the project, replacing the
+  upload-and-forget form.
+
+
 ## [0.7.0] - 2026-08-11
 
 Groundwork for HACS default-store submission.

@@ -19,6 +19,10 @@ services:
     restart: unless-stopped
     ports:
       - "8099:8099"
+    volumes:
+      # Your gardens live here: settings, session files and aerial photos.
+      # Without this they would vanish when the container is recreated.
+      - spraying-data:/data
     environment:
       - HA_URL=${HA_URL}
       - HA_TOKEN=${HA_TOKEN}
@@ -28,3 +32,6 @@ services:
     # networks:
     #   homeassistant:
     #     external: true
+
+volumes:
+  spraying-data:

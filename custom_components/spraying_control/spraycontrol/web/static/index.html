@@ -12,46 +12,66 @@
 <div id="layout">
   <aside id="panel">
     <header>
-      <h1>Spraying Control</h1>
-      <p class="sub">Coverage, missed strips, overlap and refills from your walk with a knapsack sprayer.</p>
+      <div class="title-row">
+        <h1>Spraying Control</h1>
+        <button type="button" id="settings-toggle" class="icon-btn" title="Settings">&#9881;</button>
+      </div>
+      <select id="project-select" aria-label="Garden"></select>
+      <div class="btn-row tight">
+        <button type="button" id="new-project" class="ghost small">New garden</button>
+        <button type="button" id="rename-project" class="ghost small">Rename</button>
+        <button type="button" id="demo" class="ghost small">Demo</button>
+      </div>
     </header>
 
-    <section>
-      <h2>1 &middot; Track</h2>
-      <div class="tabs" id="source-tabs">
-        <button type="button" class="tab active" data-source="file">File</button>
-        <button type="button" class="tab" data-source="ha">Home Assistant</button>
-        <button type="button" class="tab" data-source="demo">Demo</button>
+    <section id="sessions-section">
+      <div class="section-head">
+        <h2>Sessions</h2>
+        <span class="hint-text" id="session-count"></span>
       </div>
 
-      <div class="pane active" data-pane="file">
-        <label class="drop" id="drop">
-          <input type="file" id="file" accept=".gpx,.csv,.tsv,.txt,.json,.geojson,.kml">
-          <span id="file-label">Drop a GPX, CSV, KML or GeoJSON track here, or click to choose</span>
-        </label>
+      <label class="drop" id="drop">
+        <input type="file" id="file" multiple
+               accept=".gpx,.csv,.tsv,.txt,.json,.geojson,.kml,.png,.jpg,.jpeg">
+        <span id="file-label">Drop tracks or an aerial photo here</span>
+        <small>GPX, CSV, KML, GeoJSON &middot; PNG, JPG</small>
+      </label>
+
+      <div id="ha-import" class="ha-row" hidden>
+        <select id="entity" aria-label="Device tracker"></select>
+        <input type="date" id="day" aria-label="Day">
+        <button type="button" id="import-ha" class="ghost small">Import</button>
       </div>
 
-      <div class="pane" data-pane="ha">
-        <div id="ha-status" class="note">Checking Home Assistant&hellip;</div>
-        <label>Device tracker
-          <select id="entity"></select>
-        </label>
-        <div class="row">
-          <label>Day <input type="date" id="day"></label>
-          <label>UTC offset <input type="number" id="tz-offset" step="0.5" value="0"></label>
+      <ul id="sessions" class="list"></ul>
+
+      <div class="btn-row">
+        <button type="button" id="select-all" class="ghost small">All</button>
+        <button type="button" id="select-none" class="ghost small">None</button>
+      </div>
+      <button type="button" id="run" class="primary">Analyse selected</button>
+      <div id="error" class="error" hidden></div>
+    </section>
+
+    <section id="photos-section" hidden>
+      <div class="section-head">
+        <h2>Aerial photos</h2>
+      </div>
+      <ul id="overlays" class="list"></ul>
+      <div id="align-box" hidden>
+        <p class="note">Drag the three handles onto matching ground features,
+        then save. Corners: top-left, top-right, bottom-left.</p>
+        <label>Opacity <input type="range" id="opacity" min="0" max="1" step="0.05" value="1"></label>
+        <div class="btn-row">
+          <button type="button" id="align-save" class="primary small">Save position</button>
+          <button type="button" id="align-cancel" class="ghost small">Cancel</button>
         </div>
-      </div>
-
-      <div class="pane" data-pane="demo">
-        <p class="note">A synthetic walk over a small plot with one skipped lane
-        and one overlapping lane built in, so you can see what each looks like
-        on the map.</p>
       </div>
     </section>
 
-    <section>
-      <h2>2 &middot; Sprayer</h2>
-      <label>Spray width &mdash; how wide a band you treat on one pass
+    <section id="settings" hidden>
+      <div class="section-head"><h2>Settings</h2></div>
+      <label>Spray width &mdash; the band you treat on one pass
         <div class="presets" id="swath-presets">
           <button type="button" data-swath="0.5">0.5 m</button>
           <button type="button" data-swath="1" class="active">1 m</button>
@@ -63,12 +83,8 @@
       <label>Tank capacity <span class="unit">L</span>
         <input type="number" id="tank" value="18" step="1" min="1">
       </label>
-    </section>
 
-    <section>
-      <h2>3 &middot; Refill point &amp; plot</h2>
-      <p class="note">Where you refill the backpack. Walking back here counts as
-      a refill; total product = tank &times; refills.</p>
+      <h3>Refill point</h3>
       <div class="row">
         <label>Lat <input type="number" id="base-lat" step="0.000001" placeholder="unset"></label>
         <label>Lon <input type="number" id="base-lon" step="0.000001" placeholder="unset"></label>
@@ -78,41 +94,46 @@
         <label>Min stop <span class="unit">s</span><input type="number" id="base-dwell" value="60" min="10"></label>
       </div>
       <div class="btn-row">
-        <button type="button" id="pick-base" class="ghost">Pick refill point on map</button>
-        <button type="button" id="locate" class="ghost">Use my location</button>
-        <button type="button" id="clear-base" class="ghost">Clear</button>
+        <button type="button" id="pick-base" class="ghost small">Pick on map</button>
+        <button type="button" id="locate" class="ghost small">My location</button>
+        <button type="button" id="clear-base" class="ghost small">Clear</button>
       </div>
-      <p class="note">Click the map to drop the point, then drag it to fine-tune.</p>
+
+      <h3>Plot boundary</h3>
       <div class="btn-row">
-        <button type="button" id="draw-field" class="ghost">Draw plot boundary</button>
-        <button type="button" id="clear-field" class="ghost">Clear plot</button>
+        <button type="button" id="draw-field" class="ghost small">Draw plot</button>
+        <button type="button" id="clear-field" class="ghost small">Clear</button>
       </div>
       <div id="field-note" class="note"></div>
+
+      <details id="advanced">
+        <summary>Advanced</summary>
+        <div class="row">
+          <label>Min speed <span class="unit">km/h</span><input type="number" id="min-speed" value="0.4" step="0.1"></label>
+          <label>Max speed <span class="unit">km/h</span><input type="number" id="max-speed" value="4.5" step="0.5"></label>
+        </div>
+        <div class="row">
+          <label>Max fix gap <span class="unit">s</span><input type="number" id="max-gap" value="45" step="5"></label>
+          <label>Max accuracy <span class="unit">m</span><input type="number" id="max-accuracy" value="25" step="5"></label>
+        </div>
+        <div class="row">
+          <label>Cell size <span class="unit">m</span><input type="number" id="cell" value="0.25" step="0.05" min="0.1"></label>
+          <label>Ignore gaps &lt; <span class="unit">m&sup2;</span><input type="number" id="min-gap-area" value="2" step="1"></label>
+        </div>
+      </details>
+      <div class="note" id="save-state">Settings save automatically.</div>
     </section>
 
-    <details id="advanced">
-      <summary>Advanced</summary>
-      <div class="row">
-        <label>Min speed <span class="unit">km/h</span><input type="number" id="min-speed" value="0.4" step="0.1"></label>
-        <label>Max speed <span class="unit">km/h</span><input type="number" id="max-speed" value="4.5" step="0.5"></label>
-      </div>
-      <div class="row">
-        <label>Max fix gap <span class="unit">s</span><input type="number" id="max-gap" value="45" step="5"></label>
-        <label>Max accuracy <span class="unit">m</span><input type="number" id="max-accuracy" value="25" step="5"></label>
-      </div>
-      <div class="row">
-        <label>Cell size <span class="unit">m</span><input type="number" id="cell" value="0.25" step="0.05" min="0.1"></label>
-        <label>Ignore gaps &lt; <span class="unit">m&sup2;</span><input type="number" id="min-gap-area" value="2" step="1"></label>
-      </div>
-    </details>
-
-    <button type="button" id="run" class="primary">Analyse</button>
-    <div id="error" class="error" hidden></div>
-
     <section id="results" hidden>
-      <h2>Results</h2>
+      <div class="section-head"><h2>Results</h2></div>
+      <label>Coverage opacity &mdash; fade it back to see the ground
+        <input type="range" id="cov-opacity" min="0" max="1" step="0.05" value="0.75">
+      </label>
       <div id="stats" class="stats"></div>
       <div id="warnings"></div>
+
+      <h3 id="sessions-head" hidden>Per session</h3>
+      <table id="session-table"><tbody></tbody></table>
 
       <h3>Tank loads</h3>
       <table id="loads"><tbody></tbody></table>
@@ -124,12 +145,12 @@
       <div id="legend" class="legend"></div>
 
       <div class="btn-row">
-        <a id="dl-geojson" class="ghost btn" download>Download GeoJSON</a>
-        <a id="dl-json" class="ghost btn" download>Download JSON</a>
+        <a id="dl-geojson" class="ghost btn small" download>GeoJSON</a>
+        <a id="dl-json" class="ghost btn small" download>JSON</a>
       </div>
       <div class="btn-row">
         <label class="grow">Sensor prefix <input type="text" id="prefix" value="spray"></label>
-        <button type="button" id="push" class="primary">Push to Home Assistant</button>
+        <button type="button" id="push" class="primary small">Push to HA</button>
       </div>
       <div id="push-result" class="note"></div>
     </section>
@@ -141,6 +162,7 @@
 <div id="hint" hidden></div>
 
 <script src="leaflet.js"></script>
+<script src="rotated-overlay.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

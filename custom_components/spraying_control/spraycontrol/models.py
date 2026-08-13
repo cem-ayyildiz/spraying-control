@@ -153,6 +153,7 @@ class TankLoad:
     distance_m: float
     volume_l: float
     is_complete: bool  # ended with a return to base, so the tank was run out
+    track_name: str = ""  # which session this load belongs to
 
     @property
     def area_ha(self) -> float:
@@ -161,6 +162,31 @@ class TankLoad:
     @property
     def rate_l_per_ha(self) -> float:
         return self.volume_l / self.area_ha if self.area_ha > 0 else 0.0
+
+
+@dataclass
+class TrackSummary:
+    """What one track contributed to a combined analysis."""
+
+    name: str
+    start_t: float
+    end_t: float
+    n_points: int
+    area_m2: float  # this track's own footprint
+    new_area_m2: float  # ground this track was the first to cover
+    distance_m: float
+    spraying_time_s: float
+    n_loads: int
+    volume_l: float
+
+    @property
+    def area_ha(self) -> float:
+        return self.area_m2 / M2_PER_HA
+
+    @property
+    def repeat_area_m2(self) -> float:
+        """Ground this track covered that an earlier track had already done."""
+        return max(0.0, self.area_m2 - self.new_area_m2)
 
 
 @dataclass
@@ -222,6 +248,7 @@ class AnalysisResult:
     bounds: tuple[float, float, float, float]  # south, west, north, east
     overlay_png: bytes | None = None
     warnings: list[str] = field(default_factory=list)
+    tracks: list["TrackSummary"] = field(default_factory=list)
 
     @property
     def refill_count(self) -> int:

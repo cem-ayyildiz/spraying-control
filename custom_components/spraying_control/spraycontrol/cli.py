@@ -126,9 +126,16 @@ def _emit(result, args) -> None:
 
 
 def cmd_analyze(args) -> int:
-    data = Path(args.file).read_bytes()
-    track = parse_track(data, args.file)
-    result = analyze(track, _config_from(args), _base_from(args), _field_rings(args.field), render=bool(args.png))
+    """Analyse one session, or several together."""
+    tracks = []
+    for path in args.file:
+        try:
+            tracks.append(parse_track(Path(path).read_bytes(), path))
+        except OSError as err:
+            raise SystemExit(f"could not read {path}: {err}")
+    result = analyze(
+        tracks, _config_from(args), _base_from(args), _field_rings(args.field), render=bool(args.png)
+    )
     _emit(result, args)
     return 0
 
@@ -194,8 +201,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_analyze = sub.add_parser("analyze", help="analyse a track file (GPX, CSV, GeoJSON, KML)")
-    p_analyze.add_argument("file")
+    p_analyze = sub.add_parser("analyze", help="analyse one or more track files (GPX, CSV, GeoJSON, KML)")
+    p_analyze.add_argument("file", nargs="+", metavar="FILE",
+                           help="track files; several are combined into one coverage picture")
     _add_machine_args(p_analyze)
     p_analyze.set_defaults(func=cmd_analyze)
 
