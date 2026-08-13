@@ -201,9 +201,9 @@ function updateCount() {
 
 function renderOverlays() {
   const p = state.project;
-  $('photos-section').hidden = p.overlays.length === 0;
   const ul = $('overlays');
   ul.innerHTML = '';
+  $('photo-hint').hidden = p.overlays.length > 0;
   p.overlays.forEach((o) => {
     const li = document.createElement('li');
     li.className = o.enabled ? '' : 'off';
@@ -549,6 +549,16 @@ async function addFiles(fileList) {
       const stem = img.name.replace(IMAGE_EXT, '');
       const sidecar = worlds.find((w) => w.name.replace(/\.[^.]+$/, '') === stem);
       if (sidecar) fd.append('world_file', sidecar);
+      // Where to drop it if the photo has no GPS and there are no tracks yet:
+      // the middle of the current view, sized to about half of what is on screen.
+      const c = map.getCenter();
+      fd.append('centre_lat', c.lat);
+      fd.append('centre_lon', c.lng);
+      const b = map.getBounds();
+      const across = map.distance(
+        [c.lat, b.getWest()], [c.lat, b.getEast()],
+      );
+      fd.append('width_m', Math.max(10, Math.round(across * 0.5)));
       const res = await api(`api/projects/${state.project.id}/overlays`, { method: 'POST', form: fd });
       state.project = res.project;
       renderOverlays();
@@ -565,6 +575,16 @@ async function addFiles(fileList) {
 }
 
 $('file').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+
+// A photo-only picker, so "Add an aerial photo" cannot pull in a track by mistake.
+const photoInput = document.createElement('input');
+photoInput.type = 'file';
+photoInput.accept = '.png,.jpg,.jpeg,.jgw,.pgw,.wld';
+photoInput.multiple = true;
+photoInput.style.display = 'none';
+document.body.appendChild(photoInput);
+photoInput.addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+$('add-photo').addEventListener('click', () => photoInput.click());
 
 // Drop anywhere on the window, not just the little box.
 ['dragenter', 'dragover'].forEach((ev) =>

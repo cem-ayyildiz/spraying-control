@@ -349,6 +349,7 @@ def guess_placement(
     fallback_centre: LatLon | None = None,
     default_width_m: float = 60.0,
     world_file: str | None = None,
+    centre_label: str = "centred on your tracks",
 ) -> tuple[Placement, str]:
     """Best first guess at where an image belongs, and how it was reached.
 
@@ -379,5 +380,5 @@ def guess_placement(
         )
     return (
         place_centred(fallback_centre, width_px, height_px, default_width_m),
-        "centred on your tracks",
+        centre_label,
     )

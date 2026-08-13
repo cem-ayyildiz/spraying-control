@@ -13,6 +13,22 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-08-13
+
+### Fixed
+- **Adding the first aerial photo to a new garden failed.** With no sessions to
+  centre on and no GPS in the picture, the upload was refused outright - which
+  is exactly what happens when you start with the photo rather than a track. It
+  now lands on the part of the map you are looking at, sized to the view, ready
+  to drag into place. (A helper lost in the 0.8.0 rewrite also made that request
+  500 rather than reporting anything useful.)
+
+### Added
+- **Aerial photos** is always visible, with an **Add an aerial photo…** button,
+  instead of appearing only once a photo exists.
+- The placement note now says which it used: *centred on your view* or *centred
+  on your tracks*.
+
 ## [0.8.1] - 2026-08-13
 
 Works with no internet, and the picture's own coordinates are addressable.
