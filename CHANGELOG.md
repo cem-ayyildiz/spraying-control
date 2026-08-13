@@ -13,6 +13,23 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-13
+
+### Added
+- **Snap to my track.** A spraying route is not random - it runs along paths,
+  bed edges and the sides of a plot, and those are exactly the lines that stand
+  out in an aerial photo. So the route doubles as control points: the picture is
+  slid, turned and scaled until the walk lies on the lines in it. Runs in the
+  browser on a canvas, so it needs no dependency and works offline.
+  - **The angle comes back reliably** - within a third of a degree from twenty
+    degrees out, in a few milliseconds.
+  - **Scale is the ambiguous one.** Planted rows repeat, so several sizes put the
+    route on *a* set of lines equally well. If you know the real width, type it
+    and tick **Keep the width** - then position and angle are solved against it
+    and the result is dependable.
+  - The search is anchored on how big the walk is, so it copes with a photo
+    dropped at window scale rather than ground scale.
+
 ## [0.10.0] - 2026-08-13
 
 An easier way to put a photo on the map.

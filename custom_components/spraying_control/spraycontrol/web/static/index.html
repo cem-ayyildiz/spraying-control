@@ -73,6 +73,17 @@
         same feature on the map. Twice. Position, size and angle are worked out
         for you.</p>
 
+        <button type="button" id="snap" class="ghost small" style="width:100%" hidden>
+          &#10022; Snap to my track
+        </button>
+        <label id="snap-lock-row" hidden style="display:flex;gap:6px;align-items:center">
+          <input type="checkbox" id="snap-lock" style="width:auto;margin:0">
+          Keep the width above &mdash; solve only position and angle
+        </label>
+        <p class="note" id="snap-note" hidden>Puts your walked route onto the paths
+        and edges in the picture. The angle comes back reliably; if you know the
+        real width, type it above and tick the box.</p>
+
         <p class="note">Or by hand: drag the <b>white centre</b> handle to move it,
         and use the controls below. The coloured corners fine-tune the fit.</p>
 
@@ -197,6 +208,7 @@
 
 <script src="leaflet.js"></script>
 <script src="rotated-overlay.js"></script>
+<script src="snap.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

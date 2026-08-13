@@ -463,6 +463,30 @@ async def api_analyze_project(project_id: str, track_ids: str = Form(None)):
     return JSONResponse(_result_json(result, _remember(result), tracks, cfg, base))
 
 
+@app.get("/api/projects/{project_id}/trackpoints")
+async def api_trackpoints(project_id: str, limit: int = 1500):
+    """Where the walker went, thinned down.
+
+    Used to snap an aerial photo onto the ground: the route follows paths and
+    bed edges that are visible in the picture, so it doubles as a set of
+    control points.
+    """
+    project = _project(project_id)
+    try:
+        tracks = store().load_tracks(project)
+    except (OSError, TrackParseError) as err:
+        raise HTTPException(400, str(err))
+    if not tracks:
+        return {"points": []}
+
+    points: list[list[float]] = []
+    for track in tracks:
+        step = max(1, len(track) // max(1, limit // max(1, len(tracks))))
+        for lat, lon in zip(track.lat[::step], track.lon[::step]):
+            points.append([round(float(lat), 7), round(float(lon), 7)])
+    return {"points": points}
+
+
 @app.post("/api/demo")
 async def api_demo():
     """A worked example, for a first look without any data."""
