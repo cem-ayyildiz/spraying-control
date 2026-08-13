@@ -66,8 +66,15 @@
       <p class="note" id="photo-hint">Centred on where you are looking, then drag
       the corners to line it up.</p>
       <div id="align-box" hidden>
-        <p class="note">Drag the <b>white centre</b> handle to move it, or use the
-        controls below. The three coloured corners fine-tune the fit.</p>
+        <button type="button" id="pin-mode" class="ghost small" style="width:100%">
+          &#128204; Pin two points &mdash; the easy way
+        </button>
+        <p class="note" id="pin-note">Click a feature in the photo, then click the
+        same feature on the map. Twice. Position, size and angle are worked out
+        for you.</p>
+
+        <p class="note">Or by hand: drag the <b>white centre</b> handle to move it,
+        and use the controls below. The coloured corners fine-tune the fit.</p>
 
         <label>Rotate <span class="unit" id="rot-read">0&deg;</span>
           <input type="range" id="rotate" min="-180" max="180" step="0.5" value="0">
