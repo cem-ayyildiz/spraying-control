@@ -44,10 +44,12 @@ a drone, a mast or a window upstairs is far sharper, so you can use your own:
 1. Drop the image in alongside your tracks.
 2. It is placed for you — from an ESRI world file (`.jgw`) if you have one,
    otherwise the camera's own GPS, otherwise the middle of your tracks.
-3. Line it up: drag the **white centre handle** to move it, use the **rotate
-   slider** (with 1 degree and 90 degree nudges) to turn it, and type the real
-   **width in metres** to size it. The three coloured corners pin it onto
-   features exactly when you want that. **Save position** keeps it.
+3. Line it up. The quick way is **Pin two points**: click a feature you can
+   recognise in the photo, then click where that feature really is — twice.
+   Position, size and angle are worked out from the pair. By hand also works:
+   drag the **white centre handle** to move it, the **rotate slider** to turn
+   it, and type the real **width in metres**. The coloured corners fine-tune.
+   **Save position** keeps it.
 
 The photo sits under the coverage, and a slider fades the coverage back so you
 can read the ground through it.

@@ -13,6 +13,7 @@ from spraycontrol.imagery import (
     exif_location,
     image_size,
     place_centred,
+    placement_from_pins,
     placement_from_world_file,
 )
 from spraycontrol.report import write_png
@@ -154,6 +155,33 @@ class TestImagery:
         # Roughly a kilometre away, so far off the picture.
         px, py = placement.latlon_to_pixel(38.31, 32.91, width, height)
         assert not (0 <= px <= width and 0 <= py <= height)
+
+    @pytest.mark.parametrize(
+        "rotation,width", [(0.0, 180.0), (37.0, 180.0), (-115.0, 240.0), (90.0, 60.0)]
+    )
+    def test_two_pins_recover_a_known_placement(self, rotation, width):
+        """Naming two features and where they really are is enough to place a
+        photo exactly - no dragging required."""
+        w_px, h_px = 900, 600
+        truth = place_centred((38.3005, 32.8985), w_px, h_px, width, rotation_deg=rotation)
+
+        # Two arbitrary features, and where they actually sit on the ground.
+        features = [(137, 412), (790, 95)]
+        pins = [(f, truth.pixel_to_latlon(f[0], f[1], w_px, h_px)) for f in features]
+
+        solved = placement_from_pins(pins, w_px, h_px)
+        assert solved.rotation_deg() == pytest.approx(rotation, abs=0.01)
+        assert solved.ground_size_m()[0] == pytest.approx(width, rel=1e-3)
+        for corner in ("top_left", "top_right", "bottom_left"):
+            assert getattr(solved, corner) == pytest.approx(getattr(truth, corner), abs=1e-7)
+
+    def test_pinning_needs_two_distinct_points(self):
+        with pytest.raises(ImageError, match="two points"):
+            placement_from_pins([((0, 0), (38.3, 32.9))], 100, 100)
+        with pytest.raises(ImageError, match="same pixel"):
+            placement_from_pins(
+                [((10, 10), (38.3, 32.9)), ((10, 10), (38.4, 32.9))], 100, 100
+            )
 
     def test_world_file(self):
         text = "0.0000002\n0.0\n0.0\n-0.0000002\n32.9\n38.3"

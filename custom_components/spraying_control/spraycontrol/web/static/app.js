@@ -10,6 +10,7 @@ const state = {
   drawing: null,      // vertices while tracing a plot
   fieldRing: null,
   aligning: null,     // {id, corners, layer, handles}
+  pinning: null,      // {pins, awaiting, pixel, markers} while pinning points
 };
 
 const TRACK_EXT = /\.(gpx|csv|tsv|txt|json|geojson|kml)$/i;
@@ -404,6 +405,120 @@ function startAlign(overlayId) {
   hint('Drag the white handle to move it, the slider to turn it');
 }
 
+/* ------------------------------------------------- pin two points ------- */
+
+/* Which pixel of the photo currently sits under a point on the ground.
+   The inverse of the affine the three corners describe. */
+function pixelAt(c, lat, lon, wpx, hpx) {
+  const e1 = [c.topRight[0] - c.topLeft[0], c.topRight[1] - c.topLeft[1]];
+  const e2 = [c.bottomLeft[0] - c.topLeft[0], c.bottomLeft[1] - c.topLeft[1]];
+  const det = e1[1] * e2[0] - e1[0] * e2[1];
+  if (Math.abs(det) < 1e-18) return null;
+  const dLat = lat - c.topLeft[0];
+  const dLon = lon - c.topLeft[1];
+  return [((dLon * e2[0] - dLat * e2[1]) / det) * wpx, ((dLat * e1[1] - dLon * e1[0]) / det) * hpx];
+}
+
+/* Place the photo so that two of its pixels land on two chosen spots.
+ *
+ * This is the classic way to georeference a picture: name a feature you can see
+ * in it, say where that feature really is, twice over. Two pairs fix position,
+ * scale and rotation - everything except shear, which a photo taken from above
+ * does not need. The image's y axis runs down while the world's runs north, so
+ * it is flipped before solving.
+ */
+function cornersFromPins(pins, wpx, hpx) {
+  const per = metresPerDegree(pins[0].target[0]);
+  const toXY = ([la, lo]) => [lo * per.lon, la * per.lat];
+  const q = pins.map((p) => [p.pixel[0], -p.pixel[1]]);
+  const W = pins.map((p) => toXY(p.target));
+
+  const dq = [q[1][0] - q[0][0], q[1][1] - q[0][1]];
+  const dW = [W[1][0] - W[0][0], W[1][1] - W[0][1]];
+  const scale = Math.hypot(dW[0], dW[1]) / (Math.hypot(dq[0], dq[1]) || 1e-9);
+  const phi = Math.atan2(dW[1], dW[0]) - Math.atan2(dq[1], dq[0]);
+  const cos = Math.cos(phi);
+  const sin = Math.sin(phi);
+  const rot = (v) => [scale * (cos * v[0] - sin * v[1]), scale * (sin * v[0] + cos * v[1])];
+
+  const first = rot(q[0]);
+  const t = [W[0][0] - first[0], W[0][1] - first[1]];
+  const place = (px, py) => {
+    const m = rot([px, -py]);
+    return [(m[1] + t[1]) / per.lat, (m[0] + t[0]) / per.lon];
+  };
+  return { topLeft: place(0, 0), topRight: place(wpx, 0), bottomLeft: place(0, hpx) };
+}
+
+function startPinning() {
+  const a = state.aligning;
+  if (!a) return;
+  clearPins();
+  state.pinning = { pins: [], awaiting: 'photo', pixel: null, markers: [] };
+  $('pin-mode').classList.add('active');
+  hint('Click a feature you can recognise IN THE PHOTO');
+}
+
+function clearPins() {
+  if (state.pinning) state.pinning.markers.forEach((m) => map.removeLayer(m));
+  state.pinning = null;
+  $('pin-mode').classList.remove('active');
+  if (state.aligning) state.aligning.layer.setOpacity(parseFloat($('opacity').value));
+}
+
+function handlePinClick(latlng) {
+  const a = state.aligning;
+  const pin = state.pinning;
+  const o = state.project.overlays.find((x) => x.id === a.id);
+  if (!o) return;
+
+  if (pin.awaiting === 'photo') {
+    const px = pixelAt(a.corners, latlng.lat, latlng.lng, o.width_px, o.height_px);
+    if (!px || px[0] < 0 || px[1] < 0 || px[0] > o.width_px || px[1] > o.height_px) {
+      hint('That is outside the photo — click a feature within it', 3000);
+      return;
+    }
+    pin.pixel = px;
+    pin.awaiting = 'ground';
+    // Fade the photo right back so the ground underneath can be seen.
+    a.layer.setOpacity(0.25);
+    pin.markers.push(
+      L.circleMarker(latlng, { radius: 6, color: '#fff', weight: 2, fillColor: '#3ddc97', fillOpacity: 1 })
+        .bindTooltip(`Point ${pin.pins.length + 1} in the photo`).addTo(map),
+    );
+    hint('Now click where that feature really is on the map');
+    return;
+  }
+
+  pin.pins.push({ pixel: pin.pixel, target: [latlng.lat, latlng.lng] });
+  pin.markers.push(
+    L.circleMarker(latlng, { radius: 6, color: '#fff', weight: 2, fillColor: '#ff2d55', fillOpacity: 1 })
+      .bindTooltip(`Point ${pin.pins.length} on the ground`).addTo(map),
+  );
+  pin.awaiting = 'photo';
+  pin.pixel = null;
+  a.layer.setOpacity(parseFloat($('opacity').value));
+
+  if (pin.pins.length < 2) {
+    hint('Good. Now a second feature — click it in the photo');
+    return;
+  }
+
+  // Two pairs is enough to place it.
+  a.corners = cornersFromPins(pin.pins, o.width_px, o.height_px);
+  a.layer.setCorners(a.corners);
+  moveCornerHandles();
+  if (a.handles.move) a.handles.move.setLatLng(describeCorners(a.corners).centre);
+  refreshAlignReadouts();
+  clearPins();
+  const d = describeCorners(a.corners);
+  hint(`Placed: ${d.widthM.toFixed(0)} m wide, turned ${d.rotDeg.toFixed(1)}°. Save when happy.`, 6000);
+}
+
+$('pin-mode').addEventListener('click', () => {
+  if (state.pinning) clearPins(); else startPinning();
+});
+
 /* Put the corner markers back where the corners now are. */
 function moveCornerHandles() {
   const a = state.aligning;
@@ -462,6 +577,7 @@ $('align-reset').addEventListener('click', () => {
 
 function cancelAlign() {
   if (!state.aligning) return;
+  clearPins();
   map.removeLayer(state.aligning.layer);
   layers.handles.clearLayers();
   state.aligning = null;
@@ -474,6 +590,7 @@ $('align-cancel').addEventListener('click', () => { cancelAlign(); });
 
 $('align-save').addEventListener('click', async () => {
   if (!state.aligning) return;
+  clearPins();
   const c = state.aligning.corners;
   const placement = {
     top_left: c.topLeft, top_right: c.topRight, bottom_left: c.bottomLeft,
@@ -533,6 +650,7 @@ function drawField() {
 }
 
 map.on('click', (e) => {
+  if (state.pinning && state.aligning) { handlePinClick(e.latlng); return; }
   if (state.pickingBase) {
     $('base-lat').value = e.latlng.lat.toFixed(6);
     $('base-lon').value = e.latlng.lng.toFixed(6);

@@ -13,6 +13,22 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-13
+
+An easier way to put a photo on the map.
+
+### Added
+- **Pin two points.** Click a feature you can recognise in the photo, then click
+  where that feature really is. Twice. Position, scale and rotation are solved
+  from the pair - the standard way to georeference an image, and far quicker
+  than nudging corners. The photo fades while you pick the ground point so you
+  can see what is underneath.
+- `placement_from_pins()` in the library, so the same solve is available outside
+  the interface. Recovers a known placement to under a millimetre.
+
+Dragging still works, and the two mix freely: pin the photo roughly into place,
+then nudge a corner if a hedge does not quite line up.
+
 ## [0.9.1] - 2026-08-13
 
 ### Fixed

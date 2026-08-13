@@ -310,6 +310,66 @@ def place_centred(
     )
 
 
+def placement_from_pins(
+    pins: list[tuple[tuple[float, float], LatLon]],
+    width_px: int,
+    height_px: int,
+) -> Placement:
+    """Place a picture from two known points: "this pixel is that spot".
+
+    The classic way to georeference an image, and far easier than nudging
+    corners: name a feature you can see in the photo, say where it really is,
+    twice over. Two pairs fix position, scale and rotation - everything except
+    shear, which a photo taken from overhead does not need.
+
+    ``pins`` is ``[((px, py), (lat, lon)), ...]``. The image's y axis runs down
+    while the world's runs north, so it is flipped before solving.
+    """
+    if len(pins) < 2:
+        raise ImageError("two points are needed to place a photo")
+    if width_px <= 0 or height_px <= 0:
+        raise ImageError("image has no size")
+
+    (p1, t1), (p2, t2) = pins[0], pins[1]
+    plane = LocalPlane(t1[0], t1[1])
+
+    def world(target: LatLon) -> tuple[float, float]:
+        x, y = plane.forward(target[0], target[1])
+        return float(x), float(y)
+
+    q1 = (p1[0], -p1[1])
+    q2 = (p2[0], -p2[1])
+    w1 = world(t1)
+    w2 = world(t2)
+
+    dq = (q2[0] - q1[0], q2[1] - q1[1])
+    dw = (w2[0] - w1[0], w2[1] - w1[1])
+    pixel_span = math.hypot(*dq)
+    if pixel_span < 1e-9:
+        raise ImageError("the two points are the same pixel; pick two apart")
+
+    scale = math.hypot(*dw) / pixel_span
+    phi = math.atan2(dw[1], dw[0]) - math.atan2(dq[1], dq[0])
+    cos_p, sin_p = math.cos(phi), math.sin(phi)
+
+    def turn(v: tuple[float, float]) -> tuple[float, float]:
+        return (scale * (cos_p * v[0] - sin_p * v[1]), scale * (sin_p * v[0] + cos_p * v[1]))
+
+    moved = turn(q1)
+    offset = (w1[0] - moved[0], w1[1] - moved[1])
+
+    def place(px: float, py: float) -> LatLon:
+        mx, my = turn((px, -py))
+        lat, lon = plane.inverse(mx + offset[0], my + offset[1])
+        return (float(lat), float(lon))
+
+    return Placement(
+        top_left=place(0, 0),
+        top_right=place(width_px, 0),
+        bottom_left=place(0, height_px),
+    )
+
+
 def placement_from_world_file(
     text: str, width_px: int, height_px: int
 ) -> Placement:
