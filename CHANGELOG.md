@@ -13,6 +13,22 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-08-13
+
+### Fixed
+- **Snapping flung the photo to a nonsense angle.** Two faults, both mine:
+  - The fit was averaged over the part of the route that happened to land on the
+    picture, so sliding the photo until only a few lucky points remained - all of
+    them on strong edges - scored *better* than the correct placement. It is now
+    averaged over the whole route, and a placement that drops the route off the
+    picture is rejected outright.
+  - It also swept every angle and a range of sizes before refining. A dense route
+    over a textured photo always finds *some* placement that scores well, so that
+    sweep confidently threw away a carefully positioned photo. Removed: it now
+    only adjusts from where you put it, and cannot move it far.
+- Renamed to **Fine-tune with my track**, which is what it honestly does: place
+  the photo roughly yourself, then this gets the angle exact.
+
 ## [0.11.0] - 2026-08-13
 
 ### Added

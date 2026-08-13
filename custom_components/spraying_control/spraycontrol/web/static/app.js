@@ -559,22 +559,17 @@ $('snap').addEventListener('click', async () => {
     const map_ = Snap.featureMap(img);
     const here = describeCorners(a.corners);
     const per = metresPerDegree(here.centre[0]);
-
-    // Sweep for the right neighbourhood first, anchored on the route's own size
-    // - a photo dropped on the map is sized to the window, which can be an order
-    // of magnitude out. Then tighten up from whichever start scores better.
     const lock = $('snap-lock').checked ? here.widthM : 0;
-    const coarse = Snap.locate(map_, points, per, { lockWidth: lock });
-    const start =
-      coarse && coarse.score > Snap.score(
-        map_, Float64Array.from(points.flat()), here.centre, here.widthM, here.rotDeg, per,
-      )
-        ? coarse
-        : here;
-    const best = Snap.refine(map_, points, start, per, { lockWidth: lock });
 
-    if (!(best.gain > 0.01) && start === here) {
-      hint('No better fit found — it already sits as well as it can', 5000);
+    // Deliberately only a nudge from where you put it. Searching the whole
+    // picture was tried and thrown out: a dense route over a textured photo
+    // always finds *some* placement that scores well, so it would confidently
+    // fling a carefully positioned photo to a nonsense angle. Bounded, it can
+    // only improve on what you already had.
+    const best = Snap.refine(map_, points, here, per, { lockWidth: lock });
+
+    if (!(best.gain > 0.02)) {
+      hint('No better fit found nearby — place it closer first, then snap', 5000);
       return;
     }
 
