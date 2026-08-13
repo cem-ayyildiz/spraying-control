@@ -146,6 +146,14 @@ def format_text_report(result: AnalysisResult) -> str:
                 f"{load.volume_l:6.0f} L  {load.rate_l_per_ha:6.1f} L/ha{flag}"
             )
 
+    if len(result.tracks) > 1:
+        lines += ["", "PER SESSION"]
+        lines.append("    session                 own      new    again")
+        for t in result.tracks:
+            lines.append(
+                f"    {t.name[:20]:<20} {t.area_m2:8.0f} {t.new_area_m2:8.0f} {t.repeat_area_m2:8.0f}  m^2"
+            )
+
     if result.gaps:
         lines += ["", "LARGEST MISSED PATCHES"]
         for i, gap in enumerate(result.gaps[:10], 1):

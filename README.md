@@ -28,6 +28,35 @@ You enter your tank size, not a rate, so the rate is worked out from the ground
 you actually covered. If one tankful comes out much heavier than another, that
 usually means a lane got double-covered or a nozzle was off.
 
+## Your garden, kept
+
+A **garden** holds your settings, your refill point, your plot boundary, every
+session you have walked and any aerial photos. Set it up once; after that a new
+session is one file dropped on the window. Tick any set of sessions and analyse
+them together.
+
+## Your own aerial photo
+
+Satellite basemaps top out around 0.3 m per pixel and often have nothing at all
+at garden zoom — you end up staring at "map data not available". A picture from
+a drone, a mast or a window upstairs is far sharper, so you can use your own:
+
+1. Drop the image in alongside your tracks.
+2. It is placed for you — from an ESRI world file (`.jgw`) if you have one,
+   otherwise the camera's own GPS, otherwise the middle of your tracks.
+3. Drag the three corner handles onto features you recognise. Position, scale
+   and rotation all follow, and the placement is saved.
+
+The photo sits under the coverage, and a slider fades the coverage back so you
+can read the ground through it.
+
+## Several sessions at once
+
+Tick more than one session and they are analysed as one picture. Ground you
+covered again in a later session shows as overlap, and each session reports how
+much was **new** ground versus ground **already done** — which is what you want
+when a plot gets a second treatment a fortnight later.
+
 ## Set your spray width first
 
 The one number that matters most is **how wide a band you treat on one pass** —
@@ -255,11 +284,18 @@ uv run spraycontrol analyze walk.gpx \
     --base 38.3005,32.8985 --base-radius 8 \
     --png coverage.png
 
+# Several sessions in one picture, with a new-versus-repeat breakdown
+uv run spraycontrol analyze april.gpx may.gpx june.gpx --base 38.3005,32.8985
+
 # A demo walk with a skipped lane and an overlap built in
 uv run spraycontrol demo
 ```
 
 `spraycontrol analyze --help` lists every option.
+
+Gardens are stored under `~/.local/share/spraycontrol/projects`, or wherever
+`SPRAY_DATA_DIR` points. In the add-on and the standalone image that is `/data`,
+which is a persistent volume.
 
 As a library:
 
