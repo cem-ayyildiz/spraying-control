@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -135,4 +136,7 @@ def _register_service(hass: HomeAssistant) -> None:
         await _run(_entries(call), lambda entry: entry.runtime_data.async_analyze_path(path))
 
     hass.services.async_register(DOMAIN, SERVICE_ANALYZE, _handle, schema=SERVICE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_ANALYZE_FILE, _handle_file, schema=SERVICE_FILE_SCHEMA)
+    # Reads a file from the host's disk, so only administrators may call it.
+    async_register_admin_service(
+        hass, DOMAIN, SERVICE_ANALYZE_FILE, _handle_file, schema=SERVICE_FILE_SCHEMA
+    )

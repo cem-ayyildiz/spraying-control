@@ -13,6 +13,20 @@ what makes an update appear in Home Assistant.
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-10-21
+
+### Fixed
+- **`spraying_control.analyze_file` is now an admin-only action.** It reads a
+  file from the Home Assistant host's disk, so it is registered with
+  `async_register_admin_service`; a non-admin user calling it gets
+  `Unauthorized`. (HACS review.)
+- **Stopping a recording no longer switches off high-accuracy GPS it never
+  switched on.** The Companion app's `command_high_accuracy_mode` `turn_off` is
+  now sent only when a recording was actually running *and* the integration
+  itself turned the mode on when that recording started. Turning the Recording
+  switch off while idle, or when you manage high-accuracy mode yourself, leaves
+  the phone alone. (HACS review.)
+
 ## [0.11.1] - 2026-08-13
 
 ### Fixed

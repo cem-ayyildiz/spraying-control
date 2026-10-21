@@ -192,7 +192,8 @@ services → Spraying Control → Configure → Analyse a track file** opens a f
 picker — choose a GPX, CSV, KML or GeoJSON and the sensors update from it.
 
 For automations, the `spraying_control.analyze_file` action analyses a file
-already on the host (drop it into `/media` first):
+already on the host (drop it into `/media` first). Because it reads the host's
+disk, only administrator users can run it:
 
 ```yaml
 action: spraying_control.analyze_file

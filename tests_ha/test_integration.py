@@ -8,7 +8,7 @@ import pytest
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, State
 from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
 
 from custom_components.spraying_control.const import DOMAIN, SERVICE_ANALYZE
 from custom_components.spraying_control.spraycontrol.demo import synthetic_run, to_gpx
@@ -159,6 +159,50 @@ async def test_recording_switch_runs_a_session(recorder_mock, hass: HomeAssistan
     assert int(float(hass.states.get("sensor.spraying_sprayer_tank_loads").state)) == 3
 
 
+async def test_high_accuracy_follows_the_session(recorder_mock, hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    calls = async_mock_service(hass, "notify", "mobile_app_sprayer")
+
+    async def fake_history(start, end):
+        return []
+
+    coordinator._async_history = fake_history
+
+    # Stopping when nothing was recording must not touch the phone.
+    await coordinator.async_stop_recording()
+    await hass.async_block_till_done()
+    assert calls == []
+
+    await coordinator.async_start_recording()
+    await coordinator.async_stop_recording()
+    await hass.async_block_till_done()
+    assert [c.data["data"]["command"] for c in calls] == ["turn_on", "turn_off"]
+
+    # A second stop after the session ended sends nothing more.
+    await coordinator.async_stop_recording()
+    await hass.async_block_till_done()
+    assert len(calls) == 2
+
+
+async def test_high_accuracy_left_alone_when_we_did_not_set_it(recorder_mock, hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+
+    async def fake_history(start, end):
+        return []
+
+    coordinator._async_history = fake_history
+
+    # No Companion notify service when recording starts, so the integration
+    # never turned the mode on and must not turn it off either.
+    await coordinator.async_start_recording()
+    calls = async_mock_service(hass, "notify", "mobile_app_sprayer")
+    await coordinator.async_stop_recording()
+    await hass.async_block_till_done()
+    assert calls == []
+
+
 async def test_analysis_populates_sensors(recorder_mock, hass: HomeAssistant) -> None:
     """Drive the whole pipeline: tracker history in, coverage numbers out."""
     entry = await _setup(hass)
@@ -275,6 +319,21 @@ async def test_analyze_file_rejects_disallowed_path(recorder_mock, hass: HomeAss
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
             DOMAIN, "analyze_file", {"path": "/etc/passwd"}, blocking=True
+        )
+
+
+async def test_analyze_file_requires_admin(recorder_mock, hass: HomeAssistant, hass_read_only_user) -> None:
+    from homeassistant.core import Context
+    from homeassistant.exceptions import Unauthorized
+
+    await _setup(hass)
+    with pytest.raises(Unauthorized):
+        await hass.services.async_call(
+            DOMAIN,
+            "analyze_file",
+            {"path": "/config/walk.gpx"},
+            blocking=True,
+            context=Context(user_id=hass_read_only_user.id),
         )
 
 
