@@ -59,6 +59,8 @@ class SprayingCoordinator(DataUpdateCoordinator):
         self.session_start: datetime | None = None
         # A start point captured on the ground, overriding the configured base.
         self.session_point: tuple[float, float] | None = None
+        # Whether we, not the user, put the phone into high-accuracy mode.
+        self._high_accuracy_on: bool = False
 
     @property
     def options(self) -> dict:
@@ -129,7 +131,8 @@ class SprayingCoordinator(DataUpdateCoordinator):
     async def async_start_recording(self) -> None:
         self.recording = True
         self.session_start = dt_util.utcnow()
-        await self._set_high_accuracy(True)
+        if not self._high_accuracy_on:
+            self._high_accuracy_on = await self._set_high_accuracy(True)
         self.async_update_listeners()
         _LOGGER.info("Started recording for %s at %s", self.tracker, self.session_start)
 
@@ -137,7 +140,10 @@ class SprayingCoordinator(DataUpdateCoordinator):
         was_recording = self.recording
         start = self.session_start
         self.recording = False
-        await self._set_high_accuracy(False)
+        # Only undo high-accuracy mode if this session is the one that set it.
+        if was_recording and self._high_accuracy_on:
+            await self._set_high_accuracy(False)
+            self._high_accuracy_on = False
         self.async_update_listeners()
         if not was_recording or start is None:
             return
@@ -150,20 +156,21 @@ class SprayingCoordinator(DataUpdateCoordinator):
             self.async_update_listeners()
             _LOGGER.warning("Recording for %s produced nothing: %s", self.tracker, err)
 
-    async def _set_high_accuracy(self, on: bool) -> None:
+    async def _set_high_accuracy(self, on: bool) -> bool:
         """Best-effort switch of the phone's high-accuracy GPS while recording.
 
         Uses the Companion app's notify command, derived from the tracker name.
         Any failure is logged and ignored - the user may drive location a
-        different way, and recording must never hinge on it.
+        different way, and recording must never hinge on it. Returns whether
+        the command was sent.
         """
         if not self.options.get(CONF_HIGH_ACCURACY, True):
-            return
+            return False
         # device_tracker.sm_a356e -> notify.mobile_app_sm_a356e
         service = f"mobile_app_{self.tracker.split('.', 1)[-1]}"
         if not self.hass.services.has_service("notify", service):
             _LOGGER.debug("No notify.%s; skipping high-accuracy command", service)
-            return
+            return False
         try:
             await self.hass.services.async_call(
                 "notify",
@@ -176,6 +183,8 @@ class SprayingCoordinator(DataUpdateCoordinator):
             )
         except Exception as err:  # noqa: BLE001 - best effort, never fatal
             _LOGGER.debug("Could not set high-accuracy mode: %s", err)
+            return False
+        return True
 
     # --- analysis -------------------------------------------------------------
 
